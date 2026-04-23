@@ -1,0 +1,14 @@
+{
+    "name": "escape-room-script-platform/backend",
+    "description": "Escape Room Script Platform Backend",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Developer"
+        }
+    ],
+    "require": {
+        "topthink/framework": "*"
+    }
+}

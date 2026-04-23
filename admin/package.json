@@ -1,0 +1,20 @@
+{
+  "name": "escape-room-admin",
+  "version": "1.0.0",
+  "description": "Escape Room Script Platform Admin",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "vue": "^3.2.47",
+    "vue-router": "^4.1.6",
+    "element-plus": "^2.3.6",
+    "axios": "^1.4.0",
+    "pinia": "^2.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.1.0",
+    "vite": "^4.3.2"
+  }
+}

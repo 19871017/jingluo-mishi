@@ -1,0 +1,188 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "首页"
+      }
+    },
+    {
+      "path": "pages/search/search",
+      "style": {
+        "navigationBarTitleText": "搜索剧本"
+      }
+    },
+    {
+      "path": "pages/trend/trend",
+      "style": {
+        "navigationBarTitleText": "主题趋势"
+      }
+    },
+    {
+      "path": "pages/ranking/ranking",
+      "style": {
+        "navigationBarTitleText": "热门榜单"
+      }
+    },
+    {
+      "path": "pages/category/category",
+      "style": {
+        "navigationBarTitleText": "分类"
+      }
+    },
+    {
+      "path": "pages/brand/brand-list",
+      "style": {
+        "navigationBarTitleText": "品牌"
+      }
+    },
+    {
+      "path": "pages/brand/brand-detail",
+      "style": {
+        "navigationBarTitleText": "品牌详情",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/brand/constructor-detail",
+      "style": {
+        "navigationBarTitleText": "施工方详情"
+      }
+    },
+    {
+      "path": "pages/case/case-list",
+      "style": {
+        "navigationBarTitleText": "品牌施工案例"
+      }
+    },
+    {
+      "path": "pages/case/case-detail",
+      "style": {
+        "navigationBarTitleText": "案例详情"
+      }
+    },
+    {
+      "path": "pages/case/case-publish",
+      "style": {
+        "navigationBarTitleText": "上传施工案例"
+      }
+    },
+    {
+      "path": "pages/case/case-manage",
+      "style": {
+        "navigationBarTitleText": "我的施工案例"
+      }
+    },
+    {
+      "path": "pages/case/case-permission",
+      "style": {
+        "navigationBarTitleText": "案例权限申请"
+      }
+    },
+    {
+      "path": "pages/market/market",
+      "style": {
+        "navigationBarTitleText": "社区"
+      }
+    },
+    {
+      "path": "pages/market/market-detail",
+      "style": {
+        "navigationBarTitleText": "话题详情"
+      }
+    },
+    {
+      "path": "pages/script/script-detail",
+      "style": {
+        "navigationBarTitleText": "剧本详情",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/user/user",
+      "style": {
+        "navigationBarTitleText": "我的"
+      }
+    },
+    {
+      "path": "pages/user/favorites",
+      "style": {
+        "navigationBarTitleText": "我的收藏"
+      }
+    },
+    {
+      "path": "pages/user/follows",
+      "style": {
+        "navigationBarTitleText": "我的关注"
+      }
+    },
+    {
+      "path": "pages/user/publish",
+      "style": {
+        "navigationBarTitleText": "发起话题"
+      }
+    },
+    {
+      "path": "pages/user/listings",
+      "style": {
+        "navigationBarTitleText": "我的话题"
+      }
+    },
+    {
+      "path": "pages/user/interests",
+      "style": {
+        "navigationBarTitleText": "关注的话题"
+      }
+    },
+    {
+      "path": "pages/user/recent",
+      "style": {
+        "navigationBarTitleText": "最近浏览"
+      }
+    }
+  ],
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#2563eb",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "static/tabbar/home.png",
+        "selectedIconPath": "static/tabbar/home-active.png"
+      },
+      {
+        "pagePath": "pages/category/category",
+        "text": "分类",
+        "iconPath": "static/tabbar/category.png",
+        "selectedIconPath": "static/tabbar/category-active.png"
+      },
+      {
+        "pagePath": "pages/brand/brand-list",
+        "text": "品牌",
+        "iconPath": "static/tabbar/brand.png",
+        "selectedIconPath": "static/tabbar/brand-active.png"
+      },
+      {
+        "pagePath": "pages/market/market",
+        "text": "社区",
+        "iconPath": "static/tabbar/community.png",
+        "selectedIconPath": "static/tabbar/community-active.png"
+      },
+      {
+        "pagePath": "pages/user/user",
+        "text": "我的",
+        "iconPath": "static/tabbar/user.png",
+        "selectedIconPath": "static/tabbar/user-active.png"
+      }
+    ]
+  },
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "密室逃脱剧本展示系统",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#ffffff"
+  }
+}

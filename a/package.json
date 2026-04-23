@@ -1,0 +1,18 @@
+{
+  "name": "escape-room-script-platform",
+  "version": "1.0.0",
+  "description": "密室逃脱剧本展示系统小程序",
+  "main": "main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "pinia": "^3.0.4",
+    "vue": "^3.2.47"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.1.0",
+    "vite": "^4.3.2"
+  }
+}
