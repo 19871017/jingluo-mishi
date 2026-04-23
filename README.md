@@ -1,218 +1,185 @@
-# 密室逃脱剧本展示系统
+# 鲸落密室
 
-## 项目概述
+密室逃脱剧本展示系统，包含后端 API、管理员后台、品牌方后台、小程序前端，以及一套独立的小程序实验前端代码。
 
-密室逃脱剧本展示系统是一个专为密室逃脱行业设计的综合管理平台，包含后端API、后台管理系统和小程序前端三个部分。该系统旨在帮助品牌方、施工方和用户之间建立更好的沟通和展示渠道。
+## 项目结构
 
-## 技术栈
+- `backend/`：PHP 后端接口与上传资源目录
+- `admin/`：管理员/品牌方后台，Vue 3 + Vite + Element Plus
+- `miniprogram/`：当前实际使用的小程序工程与编译产物
+- `a/`：另一套独立前端实现，用于页面与交互实验
+- `shared/`：共享数据资源
+
+## 当前技术栈
 
 ### 后端
-- **语言**：PHP 8.0.2
-- **框架**：原生PHP + PDO
-- **数据库**：MySQL 8.0.12
-- **依赖管理**：Composer 2.5.8
+- PHP 8.0
+- 原生 PHP + PDO
+- MySQL 8.0
 
-### 前端
-- **后台管理系统**：Vue 3 + Vite + Element Plus + Pinia
-- **小程序前端**：Vue 3 + Vite + Uni-App
+### 后台
+- Vue 3
+- Vite
+- Element Plus
+- Pinia
 
-## 系统架构
+### 小程序
+- Uni-App / Vue 3
+- 微信小程序编译产物位于 `miniprogram/dist/dev/mp-weixin`
 
-- **backend/**：后端API服务
-- **admin/**：后台管理系统
-- **miniprogram/**：小程序前端
+## 本地环境要求
 
-## 本地环境搭建
-
-### 1. 环境准备
-
-- PHP 8.0.2（推荐使用PHPStudy）
-- MySQL 8.0.12
-- Composer 2.5.8
+- PHP 8.0+
+- MySQL 8.0+
 - Node.js 16+
+- npm
 
-### 2. 数据库配置
+## 数据库默认配置
 
-1. 创建数据库：`think`
-2. 用户名：`think`
-3. 密码：`123456`
-4. 导入数据库结构：
-   ```bash
-   mysql -u think -p123456 think < backend/database/migrations/002_simple_schema.sql
-   ```
+后端默认使用：
 
-### 3. 依赖安装
+- 数据库名：`think`
+- 用户名：`think`
+- 密码：`123456`
 
-#### 后端
+## 初始化数据库
+
+可导入：
+
 ```bash
-cd backend
-composer install
+mysql -u think -p123456 think < backend/database/migrations/002_simple_schema.sql
 ```
 
-#### 后台管理系统
+后续新增结构通过迁移文件补齐：
+
+- `003_add_script_video_and_content.sql`
+- `004_normalize_script_type_labels.sql`
+- `005_normalize_category_labels.sql`
+- `006_expand_categories_to_match_types.sql`
+- `007_add_script_collect_and_purchase_counts.sql`
+- `008_add_script_home_featured_flag.sql`
+- `009_add_script_home_featured_sort.sql`
+- `010_add_script_purchase_intent_table.sql`
+
+## 本地启动
+
+### 1. 启动后端
+
+在 `backend/public` 目录运行：
+
+```bash
+php -S 0.0.0.0:8090 router.php
+```
+
+说明：
+- 开发者工具访问通常可走 `127.0.0.1:8090`
+- 真机调试需确保局域网地址可访问，例如 `192.168.x.x:8090`
+
+### 2. 启动后台管理端
+
 ```bash
 cd admin
 npm install
-```
-
-#### 小程序前端
-```bash
-cd miniprogram
-npm install
-```
-
-## 运行项目
-
-### 1. 启动后端服务
-
-```bash
-cd backend/public
-php -S 127.0.0.1:8080
-```
-
-### 2. 启动后台管理系统
-
-```bash
-cd admin
 npm run dev
 ```
 
-访问地址：http://localhost:8083
-
-### 3. 启动小程序前端（H5模式）
+### 3. 编译小程序
 
 ```bash
 cd miniprogram
-npm run dev:h5
-```
-
-访问地址：http://localhost:5173
-
-### 4. 构建小程序
-
-```bash
-cd miniprogram
+npm install
 npm run build:mp-weixin
 ```
 
-构建结果：`dist/build/mp-weixin`
+当前小程序实际调试目录通常使用：
 
-## 功能说明
-
-### 后台管理系统
-
-- **首页概览**：系统数据统计
-- **分类管理**：管理剧本分类
-- **品牌管理**：管理品牌信息，支持Logo上传
-- **剧本管理**：管理剧本信息，支持封面上传和审核
-- **市集管理**：管理市集内容
-- **首页内容管理**：管理轮播图和广告位
-- **施工案例权限管理**：管理用户的施工案例权限申请
-- **施工案例管理**：管理用户提交的施工案例
-- **社区管理**：管理用户发布的帖子
-- **评论管理**：管理用户发布的评论
-
-### 小程序前端
-
-- **首页**：轮播图、推荐剧本、分类入口
-- **分类**：按分类浏览剧本
-- **品牌**：品牌列表和详情
-- **市集**：市集内容浏览
-- **社区**：用户发帖和评论
-- **我的**：
-  - 个人信息
-  - 发布剧本（仅品牌方可见）
-  - 我的剧本
-  - 我的施工案例
-  - 权限申请
-
-## API端点
-
-### 前端API
-- **GET /api/home** - 首页数据
-- **GET /api/categories** - 分类列表
-- **GET /api/categories/{id}/scripts** - 分类剧本列表
-- **GET /api/brands** - 品牌列表
-- **GET /api/brands/{id}** - 品牌详情
-- **GET /api/scripts/search** - 剧本搜索
-- **GET /api/scripts/{id}** - 剧本详情
-- **GET /api/construction-cases** - 施工案例列表
-- **GET /api/construction-cases/{id}** - 施工案例详情
-- **GET /api/market** - 市集数据
-- **GET /api/community/posts** - 社区帖子列表
-- **GET /api/community/posts/{id}** - 社区帖子详情
-- **POST /api/construction-case-permission** - 提交施工案例权限申请
-- **GET /api/user/construction-case-permission** - 获取用户权限状态
-- **POST /api/scripts** - 发布剧本（品牌方）
-- **GET /api/user/scripts** - 获取用户剧本列表
-
-### 后台API
-- **POST /api/admin/login** - 后台登录
-- **GET /api/admin/categories** - 后台分类列表
-- **GET /api/admin/brands** - 后台品牌列表
-- **GET /api/admin/scripts** - 后台剧本列表
-- **GET /api/admin/construction-permissions** - 后台权限申请列表
-- **GET /api/admin/construction-cases** - 后台施工案例列表
-- **GET /api/admin/community/posts** - 后台社区帖子列表
-- **GET /api/admin/community/comments** - 后台评论列表
-
-## 默认账号
-
-### 后台管理系统
-- 用户名：admin
-- 密码：admin123
-
-## 注意事项
-
-1. 确保本地环境的PHP、MySQL和Node.js版本符合要求
-2. 数据库连接信息必须与配置一致
-3. 后端服务必须在8080端口运行
-4. 上传的图片会保存在 `backend/public/uploads` 目录
-
-## 项目维护
-
-### 数据库备份
-
-定期备份数据库，确保数据安全。
-
-### 代码更新
-
-- 后端：直接修改 `backend/public/index.php` 文件
-- 前端：修改相应的Vue组件文件
-
-### 依赖更新
-
-```bash
-# 后端
-cd backend
-composer update
-
-# 前端
-cd admin
-npm update
-
-cd miniprogram
-npm update
+```text
+miniprogram/dist/dev/mp-weixin
 ```
 
-## 常见问题
+## 管理后台能力
 
-### 1. 404 API端点未找到
-- 检查后端服务是否正常运行
-- 检查API路径是否正确
+### 管理员后台
+- 分类管理
+- 品牌管理
+- 剧本管理
+- 首页轮播剧本置顶与排序
+- 首页内容管理
+- 剧本购买意向查看
+- 施工权限/施工案例管理
+- 社区内容管理
 
-### 2. 数据库连接错误
-- 检查数据库配置是否正确
-- 检查MySQL服务是否运行
+### 品牌方后台
+- 我的剧本管理
+- 剧本详情预览
+- 资料完整度提示
+- 视频/图集上传
 
-### 3. 图片上传失败
-- 检查 `backend/public/uploads` 目录是否存在且可写
-- 检查文件大小是否超过限制
+## 当前已实现的重要能力
 
-### 4. 权限申请不显示在品牌管理中
-- 权限申请通过后会自动创建品牌记录
-- 检查品牌管理页面的状态筛选
+### 剧本管理
+- 自定义编辑浏览数、点赞数、收藏数、已购买数
+- 设置首页轮播置顶
+- 设置首页轮播排序值
+- 编辑页内前台详情预览
+- 资料缺失项提示与定位
 
-## 总结
+### 小程序前端
+- 首页轮播支持剧本封面置顶展示
+- 点击轮播图直达剧本详情
+- 剧本详情支持图片、视频、详细介绍
+- 价格、浏览、点赞、收藏、已购数据展示
 
-密室逃脱剧本展示系统是一个功能完整的行业管理平台，通过前后端分离的架构，为用户提供了良好的使用体验。系统支持品牌方发布剧本、施工方申请权限、用户浏览内容等功能，满足了密室逃脱行业的多种需求。
+### 剧本购买意向
+- 前端可提交购买意向
+- 后台管理员可查看意向客户信息
+- 品牌方不可查看买家联系方式
+
+## 默认后台账号
+
+### 管理员
+- 用户名：`admin`
+- 密码：`admin123`
+
+## 调试说明
+
+### 小程序开发者工具有数据但真机无数据
+通常是以下原因：
+
+1. 后端只监听了 `127.0.0.1`
+2. 局域网 IP 不可访问
+3. Windows 防火墙未放行 8090
+4. 小程序仍使用旧缓存
+
+建议：
+
+- 后端用 `0.0.0.0:8090` 启动
+- 开发者工具清除数据缓存后重新编译
+- 真机与电脑处于同一局域网
+
+## 上传文件说明
+
+上传文件保存在：
+
+```text
+backend/public/uploads/
+```
+
+当前支持：
+- 图片：jpg / jpeg / png / gif / webp
+- 视频：mp4 / mov / webm
+
+## 安全说明
+
+以下文件不应提交到仓库：
+
+- `账号密码.txt`
+- 任何包含真实账号、密钥、服务器口令的文件
+
+本仓库已通过 `.gitignore` 排除该敏感文件。
+
+## 仓库地址
+
+GitHub：
+
+`https://github.com/19871017/jingluo-mishi`
