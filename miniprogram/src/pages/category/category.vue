@@ -4,9 +4,9 @@
       <view class="category-hero">
         <view class="hero-glow hero-glow-left"></view>
         <view class="hero-glow hero-glow-right"></view>
-        <text class="hero-caption">分类浏览</text>
-        <text class="hero-title">分类浏览</text>
-        <text class="hero-desc">按分类查看剧本内容，并通过高级筛选快速缩小范围</text>
+        <text class="hero-caption">剧本浏览</text>
+        <text class="hero-title">剧本浏览</text>
+        <text class="hero-desc">按剧本类目查看内容，并通过高级筛选快速缩小范围</text>
 
         <scroll-view scroll-x class="category-tabs" show-scrollbar="false">
           <view class="category-tab-list">
@@ -56,7 +56,7 @@
 
       <view class="section-head">
         <view>
-          <text class="section-title">分类列表</text>
+          <text class="section-title">剧本列表</text>
           <text class="section-subtitle">展示符合当前条件的剧本内容</text>
         </view>
         <text class="section-badge">{{ filteredItems.length }} 条</text>
@@ -66,7 +66,7 @@
         <ScriptList :items="filteredItems" @select="goDetail" />
       </view>
 
-      <EmptyState v-if="!filteredItems.length && !refreshing" title="暂无匹配结果" description="试试减少筛选条件或切换分类" />
+      <EmptyState v-if="!filteredItems.length && !refreshing" title="暂无匹配结果" description="试试减少筛选条件或切换剧本类目" />
 
       <FilterDrawer
         :visible="drawerVisible"
@@ -98,7 +98,7 @@ const filterState = ref({ ...defaultFilterState })
 
 const filterSections = computed(() => buildFilterSections(scripts.value.filters?.dynamic || {}, cityGroups.value))
 const rawItems = computed(() => scripts.value.scripts || [])
-const currentCategoryName = computed(() => categories.value.find((item) => item.id === activeId.value)?.name || '当前分类')
+const currentCategoryName = computed(() => categories.value.find((item) => item.id === activeId.value)?.name || '当前剧本')
 const activeFilterCount = computed(() => countActiveFilters(filterState.value))
 const selectedFilterChips = computed(() => buildSelectedFilterChips(filterState.value))
 const filteredItems = computed(() => rawItems.value.filter((item) => matchesFilters(item, filterState.value)))

@@ -43,7 +43,7 @@ function buildIcon(type, active) {
 
 const tabs = ref([
   { pagePath: '/pages/index/index', text: '首页', icon: buildIcon('home', true), activeIcon: buildIcon('home', true), inactiveIcon: buildIcon('home', false) },
-  { pagePath: '/pages/category/category', text: '分类', icon: buildIcon('category', false), activeIcon: buildIcon('category', true), inactiveIcon: buildIcon('category', false) },
+  { pagePath: '/pages/category/category', text: '剧本', icon: buildIcon('category', false), activeIcon: buildIcon('category', true), inactiveIcon: buildIcon('category', false) },
   { pagePath: '/pages/brand/brand-list', text: '品牌', icon: buildIcon('brand', false), activeIcon: buildIcon('brand', true), inactiveIcon: buildIcon('brand', false) },
   { pagePath: '/pages/market/market', text: '社区', icon: buildIcon('community', false), activeIcon: buildIcon('community', true), inactiveIcon: buildIcon('community', false) },
   { pagePath: '/pages/user/user', text: '我的', icon: buildIcon('user', false), activeIcon: buildIcon('user', true), inactiveIcon: buildIcon('user', false) },

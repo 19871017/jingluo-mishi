@@ -75,6 +75,8 @@ CREATE TABLE IF NOT EXISTS `script` (
     `purchase_count` INT NOT NULL DEFAULT 0 COMMENT 'Purchase Count',
     `is_home_featured` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Show in home carousel first',
     `home_featured_sort` INT NOT NULL DEFAULT 0 COMMENT 'Home carousel order',
+    `is_script_featured` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Show in script page carousel first',
+    `script_featured_sort` INT NOT NULL DEFAULT 0 COMMENT 'Script page carousel order',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX `idx_brand_id` (`brand_id`),
     INDEX `idx_category_id` (`category_id`),

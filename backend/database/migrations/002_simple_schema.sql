@@ -74,6 +74,8 @@ CREATE TABLE IF NOT EXISTS `script` (
     `purchase_count` INT NOT NULL DEFAULT 0,
     `is_home_featured` TINYINT(1) NOT NULL DEFAULT 0,
     `home_featured_sort` INT NOT NULL DEFAULT 0,
+    `is_script_featured` TINYINT(1) NOT NULL DEFAULT 0,
+    `script_featured_sort` INT NOT NULL DEFAULT 0,
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX `idx_brand_id` (`brand_id`),
     INDEX `idx_category_id` (`category_id`),

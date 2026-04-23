@@ -27,7 +27,7 @@
     {
       "path": "pages/category/category",
       "style": {
-        "navigationBarTitleText": "分类"
+        "navigationBarTitleText": "剧本"
       }
     },
     {
@@ -155,7 +155,7 @@
       },
       {
         "pagePath": "pages/category/category",
-        "text": "分类",
+        "text": "剧本",
         "iconPath": "static/tabbar/category.png",
         "selectedIconPath": "static/tabbar/category-active.png"
       },

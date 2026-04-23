@@ -15,7 +15,7 @@
     {
       "path": "pages/category/category",
       "style": {
-        "navigationBarTitleText": "分类"
+        "navigationBarTitleText": "剧本"
       }
     },
     {
@@ -103,7 +103,7 @@
       },
       {
         "pagePath": "pages/category/category",
-        "text": "分类"
+        "text": "剧本"
       },
       {
         "pagePath": "pages/brand/brand-list",

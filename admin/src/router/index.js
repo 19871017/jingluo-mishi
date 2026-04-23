@@ -39,7 +39,7 @@ const routes = [
         path: 'category',
         name: 'Category',
         component: () => import('../views/category/Category.vue'),
-        meta: { title: '分类管理' },
+        meta: { title: '剧本类目管理' },
       },
       {
         path: 'brand',

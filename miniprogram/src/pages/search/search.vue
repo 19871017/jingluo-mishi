@@ -31,7 +31,7 @@
             <view class="picker-chip">品牌：{{ selectedBrandName }}</view>
           </picker>
           <picker mode="selector" :range="categoryNames" @change="onCategoryChange">
-            <view class="picker-chip">分类：{{ selectedCategoryName }}</view>
+            <view class="picker-chip">剧本：{{ selectedCategoryName }}</view>
           </picker>
           <picker mode="selector" :range="sortOptions" @change="onSortChange">
             <view class="picker-chip">排序：{{ selectedSortLabel }}</view>
@@ -92,13 +92,13 @@ const result = ref({ list: [] })
 const types = SEARCH_TYPE_OPTIONS
 const selectedType = ref('')
 const brandNames = ref(['全部品牌'])
-const categoryNames = ref(['全部分类'])
+const categoryNames = ref(['全部剧本'])
 const brands = ref([])
 const categories = ref([])
 const selectedBrandId = ref('')
 const selectedCategoryId = ref('')
 const selectedBrandName = ref('全部品牌')
-const selectedCategoryName = ref('全部分类')
+const selectedCategoryName = ref('全部剧本')
 const sortOptions = ['按热度', '按名称', '按人数']
 const selectedSort = ref('hot')
 const selectedSortLabel = ref('按热度')
@@ -172,7 +172,7 @@ function onCategoryChange(event) {
   const index = Number(event.detail.value)
   const category = index === 0 ? null : categories.value[index - 1]
   selectedCategoryId.value = category?.id || ''
-  selectedCategoryName.value = category?.name || '全部分类'
+  selectedCategoryName.value = category?.name || '全部剧本'
   fetchList()
 }
 
@@ -189,7 +189,7 @@ function resetFilters() {
   selectedBrandId.value = ''
   selectedCategoryId.value = ''
   selectedBrandName.value = '全部品牌'
-  selectedCategoryName.value = '全部分类'
+  selectedCategoryName.value = '全部剧本'
   selectedSort.value = 'hot'
   selectedSortLabel.value = '按热度'
   minPlayers.value = ''
@@ -204,14 +204,14 @@ onMounted(async () => {
   brands.value = brandData.list || []
   categories.value = categoryData.list || []
   brandNames.value = ['全部品牌', ...brands.value.map((item) => item.name)]
-  categoryNames.value = ['全部分类', ...categories.value.map((item) => item.name)]
+  categoryNames.value = ['全部剧本', ...categories.value.map((item) => item.name)]
   if (selectedBrandId.value) {
     const found = brands.value.find((item) => String(item.id) === String(selectedBrandId.value))
     selectedBrandName.value = found?.name || '全部品牌'
   }
   if (selectedCategoryId.value) {
     const found = categories.value.find((item) => String(item.id) === String(selectedCategoryId.value))
-    selectedCategoryName.value = found?.name || '全部分类'
+    selectedCategoryName.value = found?.name || '全部剧本'
   }
   const page = getCurrentPages().slice(-1)[0]
   if (page?.options?.keyword) {

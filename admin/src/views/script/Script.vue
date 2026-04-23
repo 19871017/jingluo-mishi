@@ -48,7 +48,7 @@
         <el-table-column label="品牌" min-width="140">
           <template #default="{ row }">{{ brandName(row.brand_id) }}</template>
         </el-table-column>
-        <el-table-column label="分类" min-width="120">
+        <el-table-column label="剧本类目" min-width="120">
           <template #default="{ row }">{{ categoryName(row.category_id) }}</template>
         </el-table-column>
         <el-table-column prop="script_type" label="类型" min-width="120" />
@@ -58,11 +58,18 @@
         <el-table-column prop="duration" label="时长(分钟)" width="110" />
         <el-table-column label="首页轮播" width="110">
           <template #default="{ row }">
-            <el-tag v-if="row.is_home_featured" type="success" effect="plain">已置顶</el-tag>
+            <el-tag v-if="Number(row.is_home_featured) > 0" type="success" effect="plain">已置顶</el-tag>
             <el-tag v-else effect="plain">未置顶</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="home_featured_sort" label="轮播排序" width="100" />
+        <el-table-column label="剧本页轮播" width="120">
+          <template #default="{ row }">
+            <el-tag v-if="Number(row.is_script_featured) > 0" type="warning" effect="plain">已置顶</el-tag>
+            <el-tag v-else effect="plain">未置顶</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="script_featured_sort" label="剧本页排序" width="110" />
         <el-table-column label="数据统计" min-width="220">
           <template #default="{ row }">
             <div class="stats-summary">
@@ -148,8 +155,8 @@
 
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="分类">
-              <el-select v-model="form.category_id" placeholder="请选择分类" style="width: 100%">
+            <el-form-item label="剧本类目">
+              <el-select v-model="form.category_id" placeholder="请选择剧本类目" style="width: 100%">
                 <el-option v-for="item in categories" :key="item.id" :label="item.name" :value="item.id" />
               </el-select>
             </el-form-item>
@@ -159,7 +166,7 @@
               <el-select
                 v-model="form.script_type"
                 filterable
-                placeholder="建议与分类高级筛选保持一致"
+                placeholder="建议与剧本类目及高级筛选保持一致"
                 style="width: 100%"
               >
                 <el-option v-for="item in scriptTypeOptions" :key="item" :label="item" :value="item" />
@@ -331,6 +338,16 @@
         <el-form-item label="轮播排序值">
           <el-input-number v-model="form.home_featured_sort" :min="0" :disabled="store.isBrandAdmin || !form.is_home_featured" style="width: 220px" />
           <span class="switch-help">数字越小越靠前。建议第 1 张设为 1，第 2 张设为 2，第 3 张设为 3。</span>
+        </el-form-item>
+
+        <el-form-item label="剧本页轮播置顶">
+          <el-switch v-model="form.is_script_featured" :active-value="1" :inactive-value="0" :disabled="store.isBrandAdmin" />
+          <span class="switch-help">置顶后，该剧本封面会优先作为“剧本”页轮播图展示。</span>
+        </el-form-item>
+
+        <el-form-item label="剧本页排序值">
+          <el-input-number v-model="form.script_featured_sort" :min="0" :disabled="store.isBrandAdmin || !form.is_script_featured" style="width: 220px" />
+          <span class="switch-help">数字越小越靠前，用于控制“剧本”页轮播顺序。</span>
         </el-form-item>
 
         <el-row :gutter="16">
@@ -548,6 +565,8 @@ function createDefaultForm() {
     purchase_count: 0,
     is_home_featured: 0,
     home_featured_sort: 0,
+    is_script_featured: 0,
+    script_featured_sort: 0,
     cover_image: '',
     description: '',
     script_type: '',
@@ -600,7 +619,7 @@ function brandName(id) {
 }
 
 function categoryName(id) {
-  return categories.value.find((item) => Number(item.id) === Number(id))?.name || `分类 #${id}`
+  return categories.value.find((item) => Number(item.id) === Number(id))?.name || `剧本类目 #${id}`
 }
 
 function incompleteFields(row) {
@@ -701,6 +720,8 @@ function openDialog(row = null) {
       purchase_count: Number(row.purchase_count || 0),
       is_home_featured: Number(row.is_home_featured || 0),
       home_featured_sort: Number(row.home_featured_sort || 0),
+      is_script_featured: Number(row.is_script_featured || 0),
+      script_featured_sort: Number(row.script_featured_sort || 0),
       price_tier1: Number(row.price_tier1 || 0),
     })
   } else {
@@ -764,7 +785,7 @@ function removeGalleryImage(index) {
 
 async function handleSubmit() {
   if (!form.name || !form.category_id || (!store.isBrandAdmin && !form.brand_id)) {
-    ElMessage.warning('请先补全剧本名称、品牌和分类')
+    ElMessage.warning('请先补全剧本名称、品牌和剧本类目')
     return
   }
 

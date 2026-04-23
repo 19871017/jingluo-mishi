@@ -4,16 +4,16 @@
       <template #header>
         <div class="card-header">
           <div>
-            <div class="header-title">分类管理</div>
-            <div class="header-desc">维护小程序分类页与剧本发布时可选的 12 个中文分类名称和排序，需与类型体系保持一致。</div>
+            <div class="header-title">剧本类目管理</div>
+            <div class="header-desc">维护小程序“剧本”页与剧本发布时可选的 12 个中文类目名称和排序，需与类型体系保持一致。</div>
           </div>
-          <el-button type="primary" @click="handleAdd">新增分类</el-button>
+          <el-button type="primary" @click="handleAdd">新增类目</el-button>
         </div>
       </template>
 
       <el-table :data="list" border>
         <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="name" label="分类名称" min-width="220" />
+        <el-table-column prop="name" label="剧本类目名称" min-width="220" />
         <el-table-column prop="sort_order" label="排序值" width="120" />
         <el-table-column prop="created_at" label="创建时间" min-width="180" />
         <el-table-column label="操作" width="180" fixed="right">
@@ -25,9 +25,9 @@
       </el-table>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑分类' : '新增分类'" width="420px">
+    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑剧本类目' : '新增剧本类目'" width="420px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="88px">
-        <el-form-item label="分类名称" prop="name">
+        <el-form-item label="类目名称" prop="name">
           <el-input v-model="form.name" placeholder="例如：儿童密室、沉浸演绎、角色扮演" />
         </el-form-item>
         <el-form-item label="排序值" prop="sort_order">
@@ -60,7 +60,7 @@ const form = reactive({
 })
 
 const rules = {
-  name: [{ required: true, message: '请输入分类名称', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入剧本类目名称', trigger: 'blur' }],
 }
 
 async function fetchList() {
@@ -88,10 +88,10 @@ function handleEdit(row) {
 }
 
 async function handleDelete(row) {
-  await ElMessageBox.confirm(`确定删除分类“${row.name}”吗？`, '删除确认', { type: 'warning' })
+  await ElMessageBox.confirm(`确定删除剧本类目“${row.name}”吗？`, '删除确认', { type: 'warning' })
   try {
     await categoryApi.delete(row.id)
-    ElMessage.success('分类已删除')
+    ElMessage.success('剧本类目已删除')
     fetchList()
   } catch (error) {
     console.error(error)
@@ -103,10 +103,10 @@ async function handleSubmit() {
   try {
     if (isEdit.value) {
       await categoryApi.update(editId.value, form)
-      ElMessage.success('分类已更新')
+      ElMessage.success('剧本类目已更新')
     } else {
       await categoryApi.create(form)
-      ElMessage.success('分类已创建')
+      ElMessage.success('剧本类目已创建')
     }
     dialogVisible.value = false
     fetchList()

@@ -104,7 +104,7 @@
         <view class="section-head section-head-tight">
           <view>
             <text class="section-title">榜单排行</text>
-            <text class="section-subtitle">品牌与分类两个视角快速查看头部集中度</text>
+            <text class="section-subtitle">品牌与剧本两个视角快速查看头部集中度</text>
           </view>
         </view>
         <view class="split-grid">
@@ -120,7 +120,7 @@
           </view>
           <view class="mini-panel">
             <view class="mini-panel-head">
-              <text class="mini-title">分类榜</text>
+              <text class="mini-title">剧本榜</text>
               <text class="mini-pill mini-pill-soft">Top 5</text>
             </view>
             <view v-for="(item, index) in report.rankings.categories.slice(0, 5)" :key="item.name" class="mini-rank-row">
@@ -168,7 +168,7 @@
         <view class="section-head section-head-tight">
           <view>
             <text class="section-title">标签热度</text>
-            <text class="section-subtitle">从类型、品牌、分类、属性中提取出的高频标签</text>
+            <text class="section-subtitle">从类型、品牌、剧本、属性中提取出的高频标签</text>
           </view>
           <text class="section-total">{{ report.tags.length }} 个</text>
         </view>

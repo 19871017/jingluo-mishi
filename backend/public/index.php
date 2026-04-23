@@ -285,6 +285,8 @@ function normalizeScriptPayload(array $data): array
         'max_players' => max(1, (int) ($data['max_players'] ?? 8)),
         'duration' => max(0, (int) ($data['duration'] ?? 120)),
         'status' => trim((string) ($data['status'] ?? 'draft')),
+        'view_count' => max(0, (int) ($data['view_count'] ?? 0)),
+        'like_count' => max(0, (int) ($data['like_count'] ?? 0)),
         'cover_image' => $coverImage,
         'description' => trim((string) ($data['description'] ?? '')),
         'script_type' => normalizeScriptTypeLabel((string) ($data['script_type'] ?? $data['type'] ?? '')),
@@ -311,6 +313,8 @@ function normalizeScriptPayload(array $data): array
         'purchase_count' => max(0, (int) ($data['purchase_count'] ?? 0)),
         'is_home_featured' => !empty($data['is_home_featured']) ? 1 : 0,
         'home_featured_sort' => max(0, (int) ($data['home_featured_sort'] ?? 0)),
+        'is_script_featured' => !empty($data['is_script_featured']) ? 1 : 0,
+        'script_featured_sort' => max(0, (int) ($data['script_featured_sort'] ?? 0)),
     ];
 }
 
@@ -330,6 +334,8 @@ function buildScriptSummary(array $row): array
         'collect_count' => (int) ($row['collect_count'] ?? 0),
         'purchase_count' => (int) ($row['purchase_count'] ?? 0),
         'home_featured_sort' => (int) ($row['home_featured_sort'] ?? 0),
+        'is_script_featured' => (int) ($row['is_script_featured'] ?? 0),
+        'script_featured_sort' => (int) ($row['script_featured_sort'] ?? 0),
         'type' => normalizeScriptTypeLabel((string) ($row['script_type'] ?? '')),
         'horror_level' => (int) ($row['horror_level'] ?? 0),
         'difficulty' => $row['difficulty'] ?? '',
@@ -1583,7 +1589,7 @@ if (strpos($path, '/api/') === 0) {
             $params[] = '%' . $keyword . '%';
         }
 
-        $stmt = $pdo->prepare("SELECT id, name, brand_id, category_id, cover_image as thumbnail, min_players, max_players, duration, like_count, view_count, collect_count, purchase_count, script_type, horror_level, difficulty, room_size, price_tier1, area_size, room_count, rotation_count, npc_count, corridor_count, auth_status, feature_tags, suitable_players, auth_services, authorized_cities, auth_cities FROM script $where ORDER BY like_count DESC, view_count DESC LIMIT $limit OFFSET $offset");
+        $stmt = $pdo->prepare("SELECT id, name, brand_id, category_id, cover_image as thumbnail, min_players, max_players, duration, like_count, view_count, collect_count, purchase_count, is_home_featured, home_featured_sort, is_script_featured, script_featured_sort, script_type, horror_level, difficulty, room_size, price_tier1, area_size, room_count, rotation_count, npc_count, corridor_count, auth_status, feature_tags, suitable_players, auth_services, authorized_cities, auth_cities FROM script $where ORDER BY is_script_featured DESC, script_featured_sort ASC, like_count DESC, view_count DESC LIMIT $limit OFFSET $offset");
         $stmt->execute($params);
         $scripts = array_map('buildScriptSummary', $stmt->fetchAll(PDO::FETCH_ASSOC));
 
@@ -3030,12 +3036,16 @@ if (strpos($path, '/api/') === 0) {
             $where .= "(TRIM(COALESCE(video_url, '')) <> '' AND TRIM(COALESCE(detail_content, '')) <> '' AND COALESCE(price_tier1, 0) > 0 AND TRIM(COALESCE(gallery_images, '')) <> '' AND TRIM(COALESCE(gallery_images, '')) <> '[]')";
         }
 
-        $stmt = $pdo->prepare("SELECT id, name, brand_id, category_id, min_players, max_players, duration, status, view_count, like_count, collect_count, purchase_count, is_home_featured, home_featured_sort, cover_image, description, created_at, script_type, horror_level, difficulty, room_size, feature_tags, area_size, room_count, rotation_count, npc_count, corridor_count, suitable_players, auth_status, auth_services, authorized_cities, auth_cities, gallery_images, video_url, detail_content, authorizer, price_tier1 FROM script $where ORDER BY id DESC LIMIT $limit OFFSET $offset");
+        $stmt = $pdo->prepare("SELECT id, name, brand_id, category_id, min_players, max_players, duration, status, view_count, like_count, collect_count, purchase_count, is_home_featured, home_featured_sort, is_script_featured, script_featured_sort, cover_image, description, created_at, script_type, horror_level, difficulty, room_size, feature_tags, area_size, room_count, rotation_count, npc_count, corridor_count, suitable_players, auth_status, auth_services, authorized_cities, auth_cities, gallery_images, video_url, detail_content, authorizer, price_tier1 FROM script $where ORDER BY id DESC LIMIT $limit OFFSET $offset");
         $stmt->execute($params);
         $scripts = array_map(static function (array $row): array {
             $row['horror_level'] = (int) ($row['horror_level'] ?? 0);
             $row['area_size'] = (int) ($row['area_size'] ?? 0);
             $row['price_tier1'] = (float) ($row['price_tier1'] ?? 0);
+            $row['is_home_featured'] = (int) ($row['is_home_featured'] ?? 0);
+            $row['home_featured_sort'] = (int) ($row['home_featured_sort'] ?? 0);
+            $row['is_script_featured'] = (int) ($row['is_script_featured'] ?? 0);
+            $row['script_featured_sort'] = (int) ($row['script_featured_sort'] ?? 0);
             $row['feature_tags'] = decodeJsonArray($row['feature_tags'] ?? []);
             $row['suitable_players'] = decodeJsonArray($row['suitable_players'] ?? []);
             $row['auth_services'] = decodeJsonArray($row['auth_services'] ?? []);
@@ -3071,7 +3081,7 @@ if (strpos($path, '/api/') === 0) {
             $status = 'pending';
         }
 
-        $stmt = $pdo->prepare('INSERT INTO script (name, brand_id, category_id, min_players, max_players, duration, status, cover_image, description, script_type, horror_level, difficulty, room_size, feature_tags, area_size, room_count, rotation_count, npc_count, corridor_count, suitable_players, auth_status, auth_services, authorized_cities, auth_cities, gallery_images, video_url, detail_content, authorizer, price_tier1, collect_count, purchase_count, is_home_featured, home_featured_sort) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt = $pdo->prepare('INSERT INTO script (name, brand_id, category_id, min_players, max_players, duration, status, view_count, like_count, cover_image, description, script_type, horror_level, difficulty, room_size, feature_tags, area_size, room_count, rotation_count, npc_count, corridor_count, suitable_players, auth_status, auth_services, authorized_cities, auth_cities, gallery_images, video_url, detail_content, authorizer, price_tier1, collect_count, purchase_count, is_home_featured, home_featured_sort, is_script_featured, script_featured_sort) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
         $stmt->execute([
             $payload['name'],
             $brandId,
@@ -3080,6 +3090,8 @@ if (strpos($path, '/api/') === 0) {
             $payload['max_players'],
             $payload['duration'],
             $status,
+            $payload['view_count'],
+            $payload['like_count'],
             $payload['cover_image'],
             $payload['description'],
             $payload['script_type'],
@@ -3106,6 +3118,8 @@ if (strpos($path, '/api/') === 0) {
             $payload['purchase_count'],
             $payload['is_home_featured'],
             $payload['home_featured_sort'],
+            $payload['is_script_featured'],
+            $payload['script_featured_sort'],
         ]);
         
         echo json_encode(['code' => 200, 'msg' => 'Success']);
@@ -3138,7 +3152,7 @@ if (strpos($path, '/api/') === 0) {
             ? 'pending'
             : ($payload['status'] ?? 'draft');
         
-        $stmt = $pdo->prepare('UPDATE script SET name = ?, brand_id = ?, category_id = ?, min_players = ?, max_players = ?, duration = ?, status = ?, cover_image = ?, description = ?, script_type = ?, horror_level = ?, difficulty = ?, room_size = ?, feature_tags = ?, area_size = ?, room_count = ?, rotation_count = ?, npc_count = ?, corridor_count = ?, suitable_players = ?, auth_status = ?, auth_services = ?, authorized_cities = ?, auth_cities = ?, gallery_images = ?, video_url = ?, detail_content = ?, authorizer = ?, price_tier1 = ?, collect_count = ?, purchase_count = ?, is_home_featured = ?, home_featured_sort = ? WHERE id = ?');
+        $stmt = $pdo->prepare('UPDATE script SET name = ?, brand_id = ?, category_id = ?, min_players = ?, max_players = ?, duration = ?, status = ?, view_count = ?, like_count = ?, cover_image = ?, description = ?, script_type = ?, horror_level = ?, difficulty = ?, room_size = ?, feature_tags = ?, area_size = ?, room_count = ?, rotation_count = ?, npc_count = ?, corridor_count = ?, suitable_players = ?, auth_status = ?, auth_services = ?, authorized_cities = ?, auth_cities = ?, gallery_images = ?, video_url = ?, detail_content = ?, authorizer = ?, price_tier1 = ?, collect_count = ?, purchase_count = ?, is_home_featured = ?, home_featured_sort = ?, is_script_featured = ?, script_featured_sort = ? WHERE id = ?');
         $stmt->execute([
             $payload['name'],
             $brandId,
@@ -3147,6 +3161,8 @@ if (strpos($path, '/api/') === 0) {
             $payload['max_players'],
             $payload['duration'],
             $status,
+            $payload['view_count'],
+            $payload['like_count'],
             $payload['cover_image'],
             $payload['description'],
             $payload['script_type'],
@@ -3173,6 +3189,8 @@ if (strpos($path, '/api/') === 0) {
             $payload['purchase_count'],
             $payload['is_home_featured'],
             $payload['home_featured_sort'],
+            $payload['is_script_featured'],
+            $payload['script_featured_sort'],
             $id,
         ]);
         

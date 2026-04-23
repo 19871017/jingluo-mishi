@@ -30,7 +30,7 @@
 
         <template v-else>
           <el-menu-item index="/category">
-            <span>分类管理</span>
+            <span>剧本类目管理</span>
           </el-menu-item>
           <el-menu-item index="/brand">
             <span>品牌管理</span>
@@ -118,7 +118,7 @@ const guideMap = {
   },
   '/category': {
     title: '功能说明',
-    description: '这里用于维护剧本分类。新增或修改后，前端分类页和筛选项会同步使用这些分类。',
+    description: '这里用于维护剧本类目。新增或修改后，前端“剧本”页和筛选项会同步使用这些类目。',
   },
   '/brand': {
     title: '功能说明',
