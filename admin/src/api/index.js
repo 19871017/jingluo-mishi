@@ -11,6 +11,11 @@ export const brandPortalApi = {
   login: (data) => request.post('/brand/login', data),
 }
 
+export const brandProfileApi = {
+  getProfile: () => request.get('/admin/brand-profile'),
+  updateProfile: (data) => request.put('/admin/brand-profile', data)
+}
+
 export const constructorPortalApi = {
   login: (data) => request.post('/constructor/login', data),
 }
@@ -20,6 +25,27 @@ export const categoryApi = {
   create: (data) => request.post('/admin/categories', data),
   update: (id, data) => request.put(`/admin/categories/${id}`, data),
   delete: (id) => request.delete(`/admin/categories/${id}`)
+}
+
+export const featureTagApi = {
+  list: () => request.get('/admin/feature-tags'),
+  create: (data) => request.post('/admin/feature-tags', data),
+  update: (id, data) => request.put(`/admin/feature-tags/${id}`, data),
+  delete: (id) => request.delete(`/admin/feature-tags/${id}`)
+}
+
+export const suitablePlayerTagApi = {
+  list: () => request.get('/admin/suitable-player-tags'),
+  create: (data) => request.post('/admin/suitable-player-tags', data),
+  update: (id, data) => request.put(`/admin/suitable-player-tags/${id}`, data),
+  delete: (id) => request.delete(`/admin/suitable-player-tags/${id}`)
+}
+
+export const scriptTypeTagApi = {
+  list: () => request.get('/admin/script-type-tags'),
+  create: (data) => request.post('/admin/script-type-tags', data),
+  update: (id, data) => request.put(`/admin/script-type-tags/${id}`, data),
+  delete: (id) => request.delete(`/admin/script-type-tags/${id}`)
 }
 
 export const brandApi = {
@@ -95,6 +121,7 @@ export const constructionApi = {
   getCases: (params) => request.get('/admin/construction-cases', { params }),
   approveCase: (id) => request.put(`/admin/construction-cases/${id}/approve`),
   rejectCase: (id) => request.put(`/admin/construction-cases/${id}/reject`),
+  featuredCase: (id, data) => request.put(`/admin/construction-cases/${id}/featured`, data),
   deleteCase: (id) => request.delete(`/admin/construction-cases/${id}`)
 }
 

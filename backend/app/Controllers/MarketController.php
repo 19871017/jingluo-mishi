@@ -10,8 +10,9 @@ class MarketController extends BaseController
         $type = $this->request->param('type', 'sell');
         $page = (int) $this->request->param('page', 1);
         $limit = (int) $this->request->param('limit', 20);
+        $sort = $this->request->param('sort', 'latest');
 
-        $result = MarketService::getList($type, $page, $limit);
+        $result = MarketService::getList($type, $page, $limit, $sort);
 
         return $this->success([
             'featured' => array_map(fn($l) => $l->toApiData(), $result['featured']),

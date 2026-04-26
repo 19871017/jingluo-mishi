@@ -14,7 +14,7 @@
           <text class="meta-chip">{{ formatDate(detail.created_at) }}</text>
           <text class="meta-chip">{{ detail.status || 'approved' }}</text>
         </view>
-        <text class="hero-desc">{{ detail.description || '暂无讨论内容' }}</text>
+        <text class="hero-desc">{{ detail.content || detail.description || '暂无讨论内容' }}</text>
         <view class="action-row">
           <button class="secondary-btn" @click="toggleLike">{{ liked ? '取消点赞' : '点赞话题' }}</button>
           <button class="primary-btn" @click="toggleInterest">{{ interested ? '取消关注' : '关注话题' }}</button>
@@ -83,7 +83,7 @@
         <view class="related-list">
           <view v-for="item in related" :key="item.id" class="related-item card" @click="goDetail(item.id)">
             <text class="related-title">{{ item.title }}</text>
-            <text class="related-desc">{{ item.description || '暂无内容摘要' }}</text>
+            <text class="related-desc">{{ item.content || item.description || '暂无内容摘要' }}</text>
             <text class="related-meta">{{ item.user_nickname || '匿名用户' }} · {{ formatDate(item.created_at) }}</text>
           </view>
         </view>
@@ -120,32 +120,20 @@ const commentThreads = computed(() => {
 
 async function fetchDetail() {
   const { id } = getCurrentPages().slice(-1)[0].options
-  let market = { featured: [], listings: [], total: 0 }
   try {
-    detail.value = await api.getMarketDetail(id)
-    market = await api.getMarket('', 1, 50)
-  } catch (_) {
-    const overview = await api.getMarket('', 1, 1)
-    const total = Math.max(Number(overview.total || 0), 1)
-    market = await api.getMarket('', 1, total)
-    detail.value = [...(market.featured || []), ...(market.listings || [])].find((item) => String(item.id) === String(id)) || null
+    detail.value = await api.getBbsPostDetail(id)
+    const relatedData = await api.getBbsPosts(1, 5, 'latest')
+    related.value = (relatedData.list || []).filter((item) => String(item.id) !== String(id)).slice(0, 4)
+    const commentData = await api.getBbsComments(id)
+    comments.value = commentData.list || []
+  } catch (error) {
+    console.error('获取帖子详情失败:', error)
+    uni.showToast({ title: '获取帖子详情失败', icon: 'none' })
   }
-  related.value = [...(market.featured || []), ...(market.listings || [])].filter((item) => String(item.id) !== String(id)).slice(0, 4)
-  const commentData = await api.getMarketComments(id)
-  comments.value = commentData.list || []
-  try {
-    await api.markView('listing', id)
-  } catch (_) {}
 }
 
-async function toggleInterest() {
-  if (!auth.isLoggedIn) {
-    uni.showToast({ title: '请先登录后再关注话题', icon: 'none' })
-    return
-  }
-  const data = await api.toggleListingInterest(detail.value.id)
-  interested.value = !!data.active
-  uni.showToast({ title: interested.value ? '已关注话题' : '已取消关注', icon: 'none' })
+function toggleInterest() {
+  uni.showToast({ title: '关注功能暂未开放', icon: 'none' })
 }
 
 async function toggleLike() {
@@ -153,13 +141,13 @@ async function toggleLike() {
     uni.showToast({ title: '请先登录后再点赞', icon: 'none' })
     return
   }
-  const data = await api.toggleListingLike(detail.value.id)
-  liked.value = !!data.active
+  await api.likeBbsPost(detail.value.id)
+  liked.value = true
   detail.value = {
     ...detail.value,
-    like_count: Math.max(0, Number(detail.value.like_count || 0) + (liked.value ? 1 : -1)),
+    like_count: Math.max(0, Number(detail.value.like_count || 0) + 1),
   }
-  uni.showToast({ title: liked.value ? '已点赞话题' : '已取消点赞', icon: 'none' })
+  uni.showToast({ title: '已点赞话题', icon: 'none' })
 }
 
 async function submitComment() {
@@ -172,10 +160,10 @@ async function submitComment() {
     uni.showToast({ title: '请输入评论内容', icon: 'none' })
     return
   }
-  await api.createMarketComment(detail.value.id, { content, parent_id: replyTarget.value?.id || null })
+  await api.createBbsComment(detail.value.id, { content, parent_id: replyTarget.value?.id || null })
   commentText.value = ''
   replyTarget.value = null
-  const commentData = await api.getMarketComments(detail.value.id)
+  const commentData = await api.getBbsComments(detail.value.id)
   comments.value = commentData.list || []
   uni.showToast({ title: '评论已发布', icon: 'success' })
 }
@@ -185,8 +173,8 @@ async function deleteComment(id) {
     uni.showToast({ title: '请先登录后再操作', icon: 'none' })
     return
   }
-  await api.deleteMarketComment(id)
-  const commentData = await api.getMarketComments(detail.value.id)
+  await api.deleteBbsComment(id)
+  const commentData = await api.getBbsComments(detail.value.id)
   comments.value = commentData.list || []
   uni.showToast({ title: '评论已删除', icon: 'success' })
 }

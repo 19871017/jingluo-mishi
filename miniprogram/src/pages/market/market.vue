@@ -1,56 +1,24 @@
 <template>
   <scroll-view scroll-y class="market-page">
     <view class="market-shell">
-      <view class="market-hero">
-        <view class="hero-glow hero-glow-left"></view>
-        <view class="hero-glow hero-glow-right"></view>
-        <text class="hero-caption">社区交流</text>
-        <text class="hero-title">玩家交流社区</text>
-        <text class="hero-desc">发起讨论、分享踩店体验、交流剧本观点和运营心得</text>
-      </view>
-
-      <view class="summary-card card">
-        <view>
-          <text class="summary-title">社区概览</text>
-          <text class="summary-subtitle">当前共 {{ market.total || (market.listings || []).length }} 条交流内容</text>
-        </view>
-        <text class="summary-action" @click="goPublish">发起话题</text>
-      </view>
-
       <view class="sort-row card">
         <text v-for="item in sortOptions" :key="item.value" class="sort-chip" :class="{ active: sort === item.value }" @click="changeSort(item.value)">{{ item.label }}</text>
       </view>
 
-      <view v-if="market.featured?.length" class="section-card card">
-        <view class="section-head">
-          <view>
-            <text class="section-title">精选讨论</text>
-            <text class="section-subtitle">优先展示近期值得看的热门话题</text>
-          </view>
-        </view>
-        <scroll-view scroll-x class="featured-scroll" show-scrollbar="false">
-          <view class="featured-row">
-            <view v-for="item in market.featured || []" :key="item.id" class="featured-card" @click="goDetail(item.id)">
-              <text class="featured-badge">精选</text>
-              <text class="featured-title">{{ item.title }}</text>
-              <text class="featured-desc">{{ item.description || '暂无内容摘要' }}</text>
-              <text class="featured-meta">{{ item.user_nickname || '匿名用户' }} · {{ formatDate(item.created_at) }}</text>
-            </view>
-          </view>
-        </scroll-view>
-      </view>
-
       <view class="section-head page-section-head">
         <view>
-          <text class="section-title">最新交流</text>
-          <text class="section-subtitle">社区最新发帖与讨论内容</text>
+          <text class="section-title">社区交流</text>
+          <text class="section-subtitle">最新的社区讨论内容</text>
         </view>
       </view>
 
       <view class="listing-list">
-        <ListingCard v-for="item in market.listings || []" :key="item.id" :item="item" />
+        <ListingCard v-for="item in market.listings || []" :key="item.id" :item="item" @click="goDetail(item.id)" />
       </view>
     </view>
+
+    <view class="float-btn" @click="goPublish">+</view>
+    <view class="test-login" @click="testLogin">测试登录</view>
   </scroll-view>
 </template>
 
@@ -67,11 +35,19 @@ const sort = ref('latest')
 const sortOptions = [
   { label: '最新', value: 'latest' },
   { label: '最热', value: 'hot' },
-  { label: '精选', value: 'featured' },
 ]
 
 async function fetchMarket() {
-  market.value = await api.getMarket('', 1, 50, sort.value)
+  const response = await api.getBbsPosts(1, 5, sort.value)
+  market.value = {
+    listings: response.list || [],
+    total: response.total || 0
+  }
+}
+
+async function testLogin() {
+  await auth.quickLogin()
+  uni.showToast({ title: '已登录为演示用户', icon: 'success' })
 }
 
 async function changeSort(value) {
@@ -153,4 +129,8 @@ onMounted(() => syncCustomTabBar(3))
 .featured-meta { display:block; margin-top:14rpx; font-size:20rpx; color:#9ca3af; }
 
 .listing-list { display:flex; flex-direction:column; gap:20rpx; margin-top: 18rpx; }
+
+.float-btn { position: fixed; right: 32rpx; bottom: 160rpx; width: 96rpx; height: 96rpx; border-radius: 50%; background: linear-gradient(135deg, #ff9500, #ff5000); color: #fff; font-size: 48rpx; font-weight: 400; display: flex; align-items: center; justify-content: center; box-shadow: 0 6rpx 20rpx rgba(255, 80, 0, 0.35); z-index: 999; transition: transform 0.2s ease; }
+.float-btn:active { transform: scale(0.92); }
+.test-login { position: fixed; left: 24rpx; bottom: 32rpx; padding: 12rpx 24rpx; border-radius: 32rpx; background: #fff; color: #ff6b00; font-size: 22rpx; font-weight: 600; box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08); z-index: 999; }
 </style>

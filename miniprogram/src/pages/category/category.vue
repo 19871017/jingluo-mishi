@@ -77,11 +77,22 @@
       />
     </view>
   </scroll-view>
+
+  <view v-if="popupAdVisible" class="popup-ad-mask" @click="closePopupAd">
+    <view class="popup-ad-container" @click.stop="goPopupAdScript">
+      <image class="popup-ad-image" :src="popupAd.imageUrl" mode="widthFix" @load="handlePopupAdLoad"></image>
+      <view class="popup-ad-close" @click.stop="closePopupAd">×</view>
+      <view class="popup-ad-countdown" @click.stop="closePopupAd">
+        {{ countdown }}秒后关闭
+      </view>
+    </view>
+  </view>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { api } from '../../services/api'
+import { toAssetUrl } from '../../services/http'
 import EmptyState from '../../components/EmptyState.vue'
 import FilterDrawer from './components/FilterDrawer.vue'
 import ScriptList from './components/ScriptList.vue'
@@ -95,6 +106,11 @@ const scripts = ref({ scripts: [], filters: {} })
 const refreshing = ref(false)
 const drawerVisible = ref(false)
 const filterState = ref({ ...defaultFilterState })
+const popupAdVisible = ref(false)
+const popupAd = ref(null)
+const countdown = ref(5)
+const popupAdTimer = ref(null)
+const popupAdHeight = ref(0)
 
 const filterSections = computed(() => buildFilterSections(scripts.value.filters?.dynamic || {}, cityGroups.value))
 const rawItems = computed(() => scripts.value.scripts || [])
@@ -106,7 +122,7 @@ const filteredItems = computed(() => rawItems.value.filter((item) => matchesFilt
 async function fetchCategories() {
   const data = await api.getCategories()
   categories.value = data.list || []
-  if (categories.value.length) {
+  if (!activeId.value && categories.value.length) {
     activeId.value = categories.value[0].id
     await fetchScripts(activeId.value)
   }
@@ -129,10 +145,18 @@ async function selectCategory(id) {
 
 async function onRefresh() {
   refreshing.value = true
-  uni.removeStorageSync('cache_GET:/api/categories:{}')
-  await Promise.all([fetchCityRegions(), fetchCategories()])
-  refreshing.value = false
-  uni.showToast({ title: '刷新成功', icon: 'success' })
+  uni.removeStorageSync('cache_GET:/api/categories?v=category-taxonomy-12:{}')
+  uni.removeStorageSync('cache_GET:/api/meta/cities:{}')
+
+  try {
+    await Promise.all([fetchCityRegions(), fetchCategories()])
+    if (activeId.value) {
+      await fetchScripts(activeId.value)
+    }
+    uni.showToast({ title: '刷新成功', icon: 'success' })
+  } finally {
+    refreshing.value = false
+  }
 }
 
 function applyFilters(nextState) {
@@ -340,9 +364,67 @@ function goDetail(id) {
   uni.navigateTo({ url: `/pages/script/script-detail?id=${id}` })
 }
 
+async function initPopupAd() {
+  try {
+    const response = await api.getPopupAd()
+    const ad = response.ad
+    if (ad) {
+      if (ad.script_id) {
+        popupAd.value = {
+          imageUrl: toAssetUrl(ad.image),
+          scriptId: ad.script_id
+        }
+        popupAdVisible.value = true
+
+        clearPopupTimer()
+        popupAdTimer.value = setInterval(() => {
+          if (countdown.value <= 1) {
+            closePopupAd()
+          } else {
+            countdown.value--
+          }
+        }, 1000)
+      }
+    }
+  } catch (error) {
+    console.error('获取广告失败:', error)
+  }
+}
+
+function clearPopupTimer() {
+  if (popupAdTimer.value) {
+    clearInterval(popupAdTimer.value)
+    popupAdTimer.value = null
+  }
+}
+
+function closePopupAd() {
+  clearPopupTimer()
+  popupAdVisible.value = false
+  countdown.value = 5
+}
+
+function goPopupAdScript() {
+  if (popupAd.value?.scriptId) {
+    clearPopupTimer()
+    popupAdVisible.value = false
+    countdown.value = 5
+    uni.navigateTo({ url: `/pages/script/script-detail?id=${popupAd.value.scriptId}` })
+  }
+}
+
+function handlePopupAdLoad(event) {
+  const { width, height } = event?.detail || {}
+  if (!width || !height) return
+  const ratio = height / width
+  const nextHeight = Math.round(640 * ratio)
+  popupAdHeight.value = Math.min(1100, Math.max(320, nextHeight))
+}
+
 onMounted(async () => {
   await Promise.all([fetchCityRegions(), fetchCategories()])
-  syncCustomTabBar(1)
+  syncCustomTabBar(0)
+  initPopupAd()
 })
 </script>
 
@@ -601,5 +683,137 @@ onMounted(async () => {
 
 .section {
   margin-bottom: 24rpx;
+}
+
+.popup-ad-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.popup-ad-container {
+  position: relative;
+  width: 640rpx;
+  max-width: 92vw;
+  max-height: 88vh;
+  border-radius: 32rpx;
+  overflow: hidden;
+  box-shadow: 0 24rpx 80rpx rgba(0, 0, 0, 0.4);
+  animation: slideUp 0.4s ease-out;
+  transform-origin: center;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(50rpx);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.popup-ad-image {
+  width: 100%;
+  display: block;
+  border-radius: 32rpx;
+  transition: transform 0.3s ease;
+}
+
+.popup-ad-container:hover .popup-ad-image {
+  transform: scale(1.02);
+}
+
+.popup-ad-close {
+  position: absolute;
+  top: 20rpx;
+  right: 20rpx;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-size: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  z-index: 10;
+  backdrop-filter: blur(12rpx);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.4);
+  transition: all 0.3s ease;
+}
+
+.popup-ad-close:hover {
+  background: rgba(255, 69, 0, 0.8);
+  transform: scale(1.1);
+}
+
+.popup-ad-countdown {
+  position: absolute;
+  bottom: 24rpx;
+  right: 24rpx;
+  padding: 16rpx 28rpx;
+  border-radius: 36rpx;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.6));
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 600;
+  z-index: 10;
+  backdrop-filter: blur(16rpx);
+  box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.4);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.popup-ad-countdown:hover {
+  background: linear-gradient(135deg, rgba(255, 69, 0, 0.8), rgba(255, 140, 0, 0.6));
+  transform: scale(1.05);
+}
+
+.popup-ad-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 32rpx;
+  padding: 2rpx;
+  background: linear-gradient(135deg, #ff6b6b, #4ecdc4, #45b7d1, #f9ca24);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.8;
+  z-index: 1;
+}
+
+.popup-ad-container::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120rpx;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
+  border-radius: 0 0 32rpx 32rpx;
+  z-index: 5;
+  pointer-events: none;
 }
 </style>

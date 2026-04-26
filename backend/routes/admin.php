@@ -49,4 +49,9 @@ Route::group('api/admin', function () {
     Route::put('home/ads/:id', 'Admin/HomeContentController/updateAd')->middleware(\app\middleware\AdminMiddleware::class)->pattern(['id' => '\d+']);
     Route::delete('home/ads/:id', 'Admin/HomeContentController/deleteAd')->middleware(\app\middleware\AdminMiddleware::class)->pattern(['id' => '\d+']);
 
+    Route::get('popup-ads', 'Admin/PopupAdController/index')->middleware(\app\middleware\AdminMiddleware::class);
+    Route::post('popup-ads', 'Admin/PopupAdController/store')->middleware(\app\middleware\AdminMiddleware::class);
+    Route::put('popup-ads/:id', 'Admin/PopupAdController/update')->middleware(\app\middleware\AdminMiddleware::class)->pattern(['id' => '\d+']);
+    Route::delete('popup-ads/:id', 'Admin/PopupAdController/destroy')->middleware(\app\middleware\AdminMiddleware::class)->pattern(['id' => '\d+']);
+
 })->middleware(\app\middleware\CorsMiddleware::class);

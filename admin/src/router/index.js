@@ -27,7 +27,7 @@ const routes = [
   {
     path: '/',
     component: () => import('../views/layout/Layout.vue'),
-    redirect: '/dashboard',
+    redirect: '/brand-profile',
     children: [
       {
         path: 'dashboard',
@@ -42,10 +42,22 @@ const routes = [
         meta: { title: '剧本类目管理' },
       },
       {
+        path: 'feature-tag',
+        name: 'FeatureTag',
+        component: () => import('../views/category/FeatureTag.vue'),
+        meta: { title: '特色标签管理' },
+      },
+      {
         path: 'brand',
         name: 'Brand',
         component: () => import('../views/brand/Brand.vue'),
         meta: { title: '品牌管理' },
+      },
+      {
+        path: 'brand-profile',
+        name: 'BrandProfile',
+        component: () => import('../views/brand/BrandProfile.vue'),
+        meta: { title: '品牌方个人设置' },
       },
       {
         path: 'script',
@@ -60,28 +72,28 @@ const routes = [
         meta: { title: '剧本购买意向' },
       },
       {
-        path: 'market',
-        name: 'Market',
-        component: () => import('../views/market/Market.vue'),
-        meta: { title: '市场管理' },
-      },
-      {
         path: 'home-content',
         name: 'HomeContent',
         component: () => import('../views/home/HomeContent.vue'),
         meta: { title: '首页内容管理' },
       },
       {
+        path: 'popup-ad',
+        name: 'PopupAd',
+        component: () => import('../views/home/PopupAd.vue'),
+        meta: { title: '弹出广告管理' },
+      },
+      {
         path: 'construction-permission',
         name: 'ConstructionPermission',
         component: () => import('../views/construction/ConstructionPermission.vue'),
-        meta: { title: '施工权限管理' },
+        meta: { title: '入驻审核' },
       },
       {
         path: 'construction-case',
         name: 'ConstructionCase',
         component: () => import('../views/construction/ConstructionCase.vue'),
-        meta: { title: '施工案例审核' },
+        meta: { title: '案例管理' },
       },
       {
         path: 'construction-profile',
@@ -98,14 +110,8 @@ const routes = [
       {
         path: 'community',
         name: 'Community',
-        component: () => import('../views/community/CommunityPost.vue'),
+        component: () => import('../views/community/CommunityManage.vue'),
         meta: { title: '社区管理' },
-      },
-      {
-        path: 'community-comments',
-        name: 'CommunityComments',
-        component: () => import('../views/community/CommunityComment.vue'),
-        meta: { title: '评论管理' },
       },
     ],
   },
@@ -127,6 +133,11 @@ router.beforeEach((to, from, next) => {
 
   if (store.token && isAuthPage) {
     next('/')
+    return
+  }
+
+  if (store.isBrandAdmin && to.path === '/dashboard') {
+    next('/brand-profile')
     return
   }
 

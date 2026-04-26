@@ -1,55 +1,40 @@
 <template>
-  <div class="constructor-profile">
+  <div class="brand-profile">
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>施工方介绍维护</span>
-          <el-tag :type="profile.status === 'approved' ? 'success' : 'warning'">
-            {{ profile.status === 'approved' ? '已授权' : '待审核' }}
-          </el-tag>
+          <span>品牌方个人设置</span>
         </div>
       </template>
 
       <el-form label-width="110px" class="profile-form">
-        <el-form-item label="施工方名称">
-          <el-input v-model="profile.company_name" placeholder="请输入施工方名称" />
+        <el-form-item label="品牌名称">
+          <el-input v-model="profile.name" placeholder="请输入品牌名称" />
         </el-form-item>
-        <el-form-item label="服务品牌">
-          <el-input v-model="profile.brand_name" placeholder="请输入服务品牌或代表品牌" />
-        </el-form-item>
-        <el-form-item label="施工方 Logo">
+        <el-form-item label="品牌 Logo">
           <el-upload :http-request="uploadLogo" :show-file-list="false" accept=".jpg,.jpeg,.png,.gif,.webp,.svg">
             <el-button type="primary">上传 Logo</el-button>
           </el-upload>
           <el-input v-model="profile.logo" placeholder="上传后会自动回填，也可以直接粘贴图片地址" style="margin-top: 12px" />
           <el-image v-if="profile.logo" :src="profile.logo" class="preview-logo" fit="cover" />
         </el-form-item>
-        <el-form-item label="施工方背景图">
+        <el-form-item label="品牌背景图">
           <el-upload :http-request="uploadCover" :show-file-list="false" accept=".jpg,.jpeg,.png,.gif,.webp,.svg">
             <el-button type="primary">上传背景图</el-button>
           </el-upload>
           <el-input v-model="profile.cover_image" placeholder="上传后会自动回填，也可以直接粘贴图片地址" style="margin-top: 12px" />
           <el-image v-if="profile.cover_image" :src="profile.cover_image" class="preview-cover" fit="cover" />
         </el-form-item>
-        <el-form-item label="联系人">
-          <el-input v-model="profile.contact_name" placeholder="请输入联系人" />
-        </el-form-item>
-        <el-form-item label="联系电话">
-          <el-input v-model="profile.contact_phone" placeholder="请输入联系电话" />
-        </el-form-item>
-        <el-form-item label="施工方介绍">
+        <el-form-item label="品牌介绍">
           <el-input
             v-model="profile.description"
             type="textarea"
             :rows="6"
-            placeholder="请输入施工方介绍、擅长风格、施工经验等内容"
+            placeholder="请输入品牌介绍、擅长方向、授权说明等内容"
           />
         </el-form-item>
-        <el-form-item label="审核备注" v-if="profile.review_note">
-          <el-alert :title="profile.review_note" type="info" :closable="false" show-icon />
-        </el-form-item>
         <el-form-item>
-          <el-button type="primary" :loading="saving" @click="saveProfile">保存介绍</el-button>
+          <el-button type="primary" :loading="saving" @click="saveProfile">保存设置</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -58,23 +43,18 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import { constructorContentApi, uploadApi } from '../../api'
+import { brandProfileApi, uploadApi } from '../../api'
 
 const saving = ref(false)
 const profile = reactive({
-  company_name: '',
-  brand_name: '',
+  name: '',
   logo: '',
   cover_image: '',
-  contact_name: '',
-  contact_phone: '',
   description: '',
-  status: 'pending',
-  review_note: '',
 })
 
 async function loadProfile() {
-  const data = await constructorContentApi.getProfile()
+  const data = await brandProfileApi.getProfile()
   Object.assign(profile, data || {})
 }
 
@@ -101,7 +81,7 @@ async function uploadCover(options) {
 async function saveProfile() {
   saving.value = true
   try {
-    await constructorContentApi.updateProfile(profile)
+    await brandProfileApi.updateProfile(profile)
     await loadProfile()
   } finally {
     saving.value = false
@@ -112,7 +92,7 @@ onMounted(loadProfile)
 </script>
 
 <style scoped>
-.constructor-profile {
+.brand-profile {
   padding: 20px;
 }
 

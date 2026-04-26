@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#431407"/>
+      <stop offset="100%" stop-color="#ea580c"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="640" rx="120" fill="url(#bg)"/>
+  <rect x="160" y="160" width="320" height="320" rx="48" fill="#fff7ed" fill-opacity="0.12"/>
+  <path d="M220 392l100-152 100 152" fill="none" stroke="#fff7ed" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M252 340h136" fill="none" stroke="#fed7aa" stroke-width="20" stroke-linecap="round"/>
+  <text x="320" y="540" text-anchor="middle" font-size="72" font-weight="800" fill="#fff7ed" font-family="Arial, sans-serif">Brand B</text>
+</svg>

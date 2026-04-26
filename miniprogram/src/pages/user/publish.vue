@@ -54,8 +54,14 @@ async function submit(payload) {
     uni.showToast({ title: '请先登录后发起话题', icon: 'none' })
     return
   }
-  await api.createMarketListing(payload)
-  uni.showToast({ title: '话题已提交', icon: 'success' })
+  await api.createBbsPost({
+    title: payload.title,
+    content: payload.description,
+    images: payload.images || [],
+    video: payload.video || '',
+    video_cover: payload.video_cover || ''
+  })
+  uni.showToast({ title: '帖子已发布', icon: 'success' })
   setTimeout(() => {
     uni.navigateBack()
   }, 800)

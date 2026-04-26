@@ -54,6 +54,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { api } from '../../services/api'
 import { useAuthStore } from '../../stores/auth'
+import { syncCustomTabBar } from '../../utils/tabbar'
 
 const cases = ref([])
 const brands = ref([])
@@ -92,6 +93,7 @@ function formatDate(value) {
 }
 
 onMounted(loadCases)
+onMounted(() => syncCustomTabBar(2))
 </script>
 
 <style scoped>

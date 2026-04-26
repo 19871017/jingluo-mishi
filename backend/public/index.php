@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // Simple PHP backend for Escape Room Script Platform
 
 header('Content-Type: application/json');
@@ -13,8 +13,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // Database connection
 $host = '127.0.0.1';
-$dbname = 'think';
-$username = 'think';
+$dbname = 'ggg';
+$username = 'ggg';
 $password = '123456';
 
 try {
@@ -32,6 +32,10 @@ function jsonInput(): array
         return [];
     }
 
+    if (!mb_check_encoding($raw, 'UTF-8')) {
+        $raw = mb_convert_encoding($raw, 'UTF-8', 'UTF-8,GBK,GB2312,BIG5');
+    }
+
     $data = json_decode($raw, true);
     return is_array($data) ? $data : [];
 }
@@ -44,9 +48,9 @@ function normalizeScriptTypeLabel(string $type): string
     }
 
     $map = [
-        'RPG' => '角色扮演',
-        'rpg' => '角色扮演',
-        '沉浸' => '沉浸演绎',
+        'RPG' => '瑙掕壊鎵紨',
+        'rpg' => '瑙掕壊鎵紨',
+        '娌夋蹈' => '娌夋蹈婕旂粠',
     ];
 
     return $map[$type] ?? $type;
@@ -258,15 +262,17 @@ function normalizeScriptCountValue($value): string
         return '0';
     }
 
-    if (preg_match('/10\+/', $raw)) {
-        return '10+';
-    }
-
-    if (preg_match('/(\d+)/', $raw, $matches)) {
-        return $matches[1];
-    }
-
     return $raw;
+}
+
+function normalizeScriptRangeText($value): string
+{
+    return trim((string) $value);
+}
+
+function buildFirstNumberExpression(string $column): string
+{
+    return "CAST(REGEXP_SUBSTR($column, '[0-9]+') AS UNSIGNED)";
 }
 
 function normalizeScriptPayload(array $data): array
@@ -294,7 +300,7 @@ function normalizeScriptPayload(array $data): array
         'difficulty' => trim((string) ($data['difficulty'] ?? '')),
         'room_size' => trim((string) ($data['room_size'] ?? '')),
         'feature_tags' => encodeJsonArray($data['feature_tags'] ?? $data['features'] ?? []),
-        'area_size' => max(0, (int) ($data['area_size'] ?? 0)),
+        'area_size' => normalizeScriptRangeText($data['area_size'] ?? ''),
         'room_count' => normalizeScriptCountValue($data['room_count'] ?? ''),
         'rotation_count' => normalizeScriptCountValue($data['rotation_count'] ?? ''),
         'npc_count' => normalizeScriptCountValue($data['npc_count'] ?? ''),
@@ -342,7 +348,7 @@ function buildScriptSummary(array $row): array
         'room_size' => $row['room_size'] ?? '',
         'price_tier1' => (float) ($row['price_tier1'] ?? 0),
         'is_home_featured' => (int) ($row['is_home_featured'] ?? 0),
-        'area_size' => (int) ($row['area_size'] ?? 0),
+        'area_size' => $row['area_size'] ?? '',
         'room_count' => $row['room_count'] ?? '',
         'rotation_count' => $row['rotation_count'] ?? '',
         'npc_count' => $row['npc_count'] ?? '',
@@ -376,7 +382,7 @@ function parseRangePreset(string $preset): array
 function buildCountRangeExpression(string $column): string
 {
     return "CASE "
-        . "WHEN $column LIKE '%不可%' THEN 0 "
+        . "WHEN $column LIKE '%涓嶅彲%' THEN 0 "
         . "WHEN $column LIKE '%10+%' THEN 10 "
         . "ELSE CAST($column AS UNSIGNED) END";
 }
@@ -452,13 +458,13 @@ function buildScriptFilterSql(array $query, array &$params): array
 
     $horror = trim((string) ($query['horrorLevel'] ?? ''));
     if ($horror !== '') {
-        if ($horror === '重恐') {
+        if ($horror === '閲嶆亹') {
             $conditions[] = 'horror_level >= 5';
-        } elseif ($horror === '中恐') {
+        } elseif ($horror === '涓亹') {
             $conditions[] = 'horror_level = 4';
-        } elseif ($horror === '微恐') {
+        } elseif ($horror === '寰亹') {
             $conditions[] = 'horror_level BETWEEN 2 AND 3';
-        } elseif ($horror === '非恐') {
+        } elseif ($horror === '闈炴亹') {
             $conditions[] = 'horror_level <= 1';
         }
     }
@@ -477,21 +483,22 @@ function buildScriptFilterSql(array $query, array &$params): array
     $areaPreset = trim((string) ($query['areaPreset'] ?? ''));
     if ($areaPreset !== '') {
         [$min, $max] = parseRangePreset($areaPreset);
+        $areaExpr = buildFirstNumberExpression('area_size');
         if ($max === PHP_INT_MAX) {
-            $conditions[] = 'area_size >= ?';
+            $conditions[] = "$areaExpr >= ?";
             $params[] = $min;
         } elseif ($min || $max) {
-            $conditions[] = 'area_size BETWEEN ? AND ?';
+            $conditions[] = "$areaExpr BETWEEN ? AND ?";
             $params[] = $min;
             $params[] = $max;
         }
     }
     if (($query['areaMin'] ?? '') !== '') {
-        $conditions[] = 'area_size >= ?';
+        $conditions[] = buildFirstNumberExpression('area_size') . ' >= ?';
         $params[] = (int) $query['areaMin'];
     }
     if (($query['areaMax'] ?? '') !== '') {
-        $conditions[] = 'area_size <= ?';
+        $conditions[] = buildFirstNumberExpression('area_size') . ' <= ?';
         $params[] = (int) $query['areaMax'];
     }
 
@@ -503,7 +510,7 @@ function buildScriptFilterSql(array $query, array &$params): array
     ] as $prefix => $column) {
         $minKey = $prefix . 'Min';
         $maxKey = $prefix . 'Max';
-        $expression = buildCountRangeExpression($column);
+        $expression = buildFirstNumberExpression($column);
 
         if (($query[$minKey] ?? '') !== '') {
             $conditions[] = "$expression >= ?";
@@ -541,7 +548,6 @@ function buildScriptFilterSql(array $query, array &$params): array
     foreach ([
         'features' => 'feature_tags',
         'suitablePlayers' => 'suitable_players',
-        'authServices' => 'auth_services',
         'authorizedCities' => 'authorized_cities',
         'authCities' => 'auth_cities',
     ] as $key => $column) {
@@ -569,7 +575,6 @@ function collectDynamicFilterOptions(array $scripts): array
         'npcs' => [],
         'corridorCounts' => [],
         'suitablePlayers' => [],
-        'authServices' => [],
         'authorizedCities' => [],
         'authCities' => [],
     ];
@@ -583,7 +588,6 @@ function collectDynamicFilterOptions(array $scripts): array
             'npcs' => [$script['npc_count'] ?? ''],
             'corridorCounts' => [$script['corridor_count'] ?? ''],
             'suitablePlayers' => $script['suitable_players'] ?? [],
-            'authServices' => $script['auth_services'] ?? [],
             'authorizedCities' => $script['authorized_cities'] ?? [],
             'authCities' => $script['auth_cities'] ?? [],
         ] as $key => $values) {
@@ -651,6 +655,9 @@ function buildConstructionCaseItem(array $row): array
         'notes' => $notes,
         'images' => $images,
         'videos' => $videos,
+        'is_featured' => (int) ($row['is_featured'] ?? 0),
+        'featured_sort' => (int) ($row['featured_sort'] ?? 0),
+        'view_count' => (int) ($row['view_count'] ?? 0),
         'status' => $row['status'] ?? 'pending',
         'reject_reason' => $row['reject_reason'] ?? '',
         'created_at' => $row['created_at'] ?? '',
@@ -676,7 +683,7 @@ function buildConstructorSummary(array $permission, array $cases = []): array
 
     return [
         'id' => (int) ($permission['user_id'] ?? 0),
-        'name' => $permission['company_name'] ?: ('施工方 #' . ($permission['user_id'] ?? 0)),
+        'name' => $permission['company_name'] ?: ('鏂藉伐鏂?#' . ($permission['user_id'] ?? 0)),
         'company_name' => $permission['company_name'] ?? '',
         'brand_name' => $permission['brand_name'] ?? '',
         'description' => $permission['description'] ?? ($permission['reason'] ?? ''),
@@ -813,6 +820,11 @@ function requireSuperAdmin(array $admin): void
         echo json_encode(['code' => 403, 'msg' => 'Only platform admin can access this resource']);
         exit;
     }
+}
+
+function tryRequireAdmin(PDO $pdo): ?array
+{
+    return getCurrentAdmin($pdo);
 }
 
 function requireBrandAccount(array $admin): void
@@ -962,7 +974,7 @@ if (strpos($path, '/api/') === 0) {
     if (strpos($apiPath, 'admin/') === 0 && $apiPath !== 'admin/login') {
         $currentAdmin = requireAdmin($pdo);
 
-        if (($currentAdmin['role'] ?? '') === 'brand' && !preg_match('#^admin/(profile|logout|scripts(?:/.*)?|categories|stats/overview)$#', $apiPath)) {
+        if (($currentAdmin['role'] ?? '') === 'brand' && !preg_match('#^admin/(profile|logout|scripts(?:/.*)?|categories|feature-tags(?:/.*)?|script-type-tags(?:/.*)?|suitable-player-tags(?:/.*)?|stats/overview|brand-profile)$#', $apiPath)) {
             http_response_code(403);
             echo json_encode(['code' => 403, 'msg' => 'Brand account is not allowed to access this resource']);
             exit;
@@ -983,7 +995,7 @@ if (strpos($path, '/api/') === 0) {
             $openid = 'demo-' . uniqid();
         }
 
-        $nickname = trim((string) ($data['nickname'] ?? '演示用户'));
+        $nickname = trim((string) ($data['nickname'] ?? '婕旂ず鐢ㄦ埛'));
         $avatar = trim((string) ($data['avatar'] ?? ''));
 
         if (!hasTable($pdo, 'user')) {
@@ -1157,7 +1169,7 @@ if (strpos($path, '/api/') === 0) {
             $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
 
             if (!in_array($extension, $allowedTypes)) {
-                echo json_encode(['code' => 400, 'msg' => '只支持 JPG、PNG、GIF、WEBP 图片和 MP4、MOV、WEBM 视频']);
+                echo json_encode(['code' => 400, 'msg' => '鍙敮鎸?JPG銆丳NG銆丟IF銆乄EBP 鍥剧墖鍜?MP4銆丮OV銆乄EBM 瑙嗛']);
                 exit;
             }
 
@@ -1177,10 +1189,10 @@ if (strpos($path, '/api/') === 0) {
                     'data' => ['url' => $fileUrl]
                 ]);
             } else {
-                echo json_encode(['code' => 500, 'msg' => '文件上传失败']);
+                echo json_encode(['code' => 500, 'msg' => '鏂囦欢涓婁紶澶辫触']);
             }
         } else {
-            echo json_encode(['code' => 400, 'msg' => '请选择文件']);
+            echo json_encode(['code' => 400, 'msg' => '璇烽€夋嫨鏂囦欢']);
         }
         exit;
     }
@@ -1194,6 +1206,81 @@ if (strpos($path, '/api/') === 0) {
             ],
         ]);
         exit;
+    }
+
+    if ($apiPath === 'popup-ad' && $method === 'GET') {
+        $stmt = $pdo->prepare('SELECT p.id, p.image, p.script_id, s.name as script_name FROM popup_ad p LEFT JOIN script s ON p.script_id = s.id WHERE p.is_active = 1 ORDER BY p.sort_order ASC, p.id DESC LIMIT 1');
+        $stmt->execute();
+        $ad = $stmt->fetch(PDO::FETCH_ASSOC);
+        echo json_encode([
+            'code' => 200,
+            'msg' => 'Success',
+            'data' => ['ad' => $ad]
+        ]);
+        exit;
+    }
+
+    // Admin Popup Ads API
+    if (strpos($apiPath, 'admin/popup-ads') === 0) {
+        $admin = getCurrentAdmin($pdo);
+        if (!$admin) {
+            http_response_code(401);
+            echo json_encode(['code' => 401, 'msg' => 'Unauthorized']);
+            exit;
+        }
+
+        if ($apiPath === 'admin/popup-ads' && $method === 'GET') {
+            $stmt = $pdo->prepare('SELECT p.*, s.name as script_name FROM popup_ad p LEFT JOIN script s ON p.script_id = s.id ORDER BY p.sort_order ASC, p.id DESC');
+            $stmt->execute();
+            $ads = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            echo json_encode(['code' => 200, 'msg' => 'Success', 'data' => ['list' => $ads]]);
+            exit;
+        }
+
+        if ($apiPath === 'admin/popup-ads' && $method === 'POST') {
+            $data = jsonInput();
+            $image = trim($data['image'] ?? '');
+            $scriptId = (int) ($data['script_id'] ?? 0);
+            $isActive = (int) ($data['is_active'] ?? 1);
+            $sortOrder = (int) ($data['sort_order'] ?? 0);
+
+            if (!$image || !$scriptId) {
+                echo json_encode(['code' => 422, 'msg' => '鍥剧墖鍜屽墽鏈琁D涓嶈兘涓虹┖']);
+                exit;
+            }
+
+            $stmt = $pdo->prepare('INSERT INTO popup_ad (image, script_id, is_active, sort_order) VALUES (?, ?, ?, ?)');
+            $stmt->execute([$image, $scriptId, $isActive, $sortOrder]);
+            echo json_encode(['code' => 200, 'msg' => 'Success', 'data' => ['id' => $pdo->lastInsertId()]]);
+            exit;
+        }
+
+        if (preg_match('/^admin\/popup-ads\/(\d+)$/', $apiPath, $matches) && $method === 'PUT') {
+            $id = (int) $matches[1];
+            $data = jsonInput();
+            $image = trim($data['image'] ?? '');
+            $scriptId = (int) ($data['script_id'] ?? 0);
+            $isActive = (int) ($data['is_active'] ?? 1);
+            $sortOrder = (int) ($data['sort_order'] ?? 0);
+
+            if (!$image || !$scriptId) {
+                echo json_encode(['code' => 422, 'msg' => '鍥剧墖鍜屽墽鏈琁D涓嶈兘涓虹┖']);
+                exit;
+            }
+
+            $stmt = $pdo->prepare('UPDATE popup_ad SET image = ?, script_id = ?, is_active = ?, sort_order = ? WHERE id = ?');
+            $stmt->execute([$image, $scriptId, $isActive, $sortOrder, $id]);
+            echo json_encode(['code' => 200, 'msg' => 'Success']);
+            exit;
+        }
+
+        if (preg_match('/^admin\/popup-ads\/(\d+)$/', $apiPath, $matches) && $method === 'DELETE') {
+            $id = (int) $matches[1];
+            $stmt = $pdo->prepare('DELETE FROM popup_ad WHERE id = ?');
+            $stmt->execute([$id]);
+            echo json_encode(['code' => 200, 'msg' => 'Success']);
+            exit;
+        }
     }
 
     // Home API
@@ -1388,10 +1475,10 @@ if (strpos($path, '/api/') === 0) {
 
         $durationDistribution = [];
         foreach ([
-            ['name' => '0-60分钟', 'min' => 0, 'max' => 60],
-            ['name' => '61-90分钟', 'min' => 61, 'max' => 90],
-            ['name' => '91-120分钟', 'min' => 91, 'max' => 120],
-            ['name' => '121分钟以上', 'min' => 121, 'max' => 9999],
+            ['name' => '0-60鍒嗛挓', 'min' => 0, 'max' => 60],
+            ['name' => '61-90鍒嗛挓', 'min' => 61, 'max' => 90],
+            ['name' => '91-120鍒嗛挓', 'min' => 91, 'max' => 120],
+            ['name' => '121鍒嗛挓浠ヤ笂', 'min' => 121, 'max' => 9999],
         ] as $bucket) {
             $stmt = $pdo->prepare("SELECT COUNT(*) FROM script WHERE status = 'approved' AND DATE(created_at) BETWEEN ? AND ? AND duration BETWEEN ? AND ?");
             $stmt->execute([$startDate, $endDate, $bucket['min'], $bucket['max']]);
@@ -1403,7 +1490,7 @@ if (strpos($path, '/api/') === 0) {
             ['name' => '2-4人', 'min' => 2, 'max' => 4],
             ['name' => '5-6人', 'min' => 5, 'max' => 6],
             ['name' => '7-8人', 'min' => 7, 'max' => 8],
-            ['name' => '9人以上', 'min' => 9, 'max' => 99],
+            ['name' => '9人及以上', 'min' => 9, 'max' => 99],
         ] as $bucket) {
             $stmt = $pdo->prepare("SELECT COUNT(*) FROM script WHERE status = 'approved' AND DATE(created_at) BETWEEN ? AND ? AND max_players BETWEEN ? AND ?");
             $stmt->execute([$startDate, $endDate, $bucket['min'], $bucket['max']]);
@@ -1550,7 +1637,7 @@ if (strpos($path, '/api/') === 0) {
             'detail_attrs' => [
                 '人数区间' => $script['min_players'] . '-' . $script['max_players'] . '人',
                 '游戏时长' => $script['duration'] . '分钟',
-                '面积' => ((int) ($script['area_size'] ?? 0)) ? ((int) $script['area_size']) . '㎡' : '待补充',
+                '面积' => trim((string) ($script['area_size'] ?? '')) !== '' ? (string) $script['area_size'] : '待补充',
                 '房间数量' => ($script['room_count'] ?? '') !== '' ? $script['room_count'] : '待补充',
                 '滚场' => ($script['rotation_count'] ?? '') !== '' ? $script['rotation_count'] : '待补充',
                 '走廊数量' => ($script['corridor_count'] ?? '') !== '' ? $script['corridor_count'] : '待补充',
@@ -1614,7 +1701,7 @@ if (strpos($path, '/api/') === 0) {
         $limit = (int) ($_GET['limit'] ?? 20);
         $offset = max(0, ($page - 1) * $limit);
 
-        $stmt = $pdo->prepare("SELECT id, name, logo, follower_count, total_authorizations, status, created_at FROM brand WHERE status = 'approved' ORDER BY follower_count DESC, total_authorizations DESC LIMIT $limit OFFSET $offset");
+        $stmt = $pdo->prepare("SELECT id, name, logo, follower_count, total_authorizations, is_featured, featured_sort, status, created_at FROM brand WHERE status = 'approved' ORDER BY is_featured DESC, featured_sort ASC, follower_count DESC, total_authorizations DESC LIMIT $limit OFFSET $offset");
         $stmt->execute();
         $brands = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -1873,6 +1960,8 @@ if (strpos($path, '/api/') === 0) {
 
     if (preg_match('/^construction-cases\/(\d+)$/', $apiPath, $matches) && $method === 'GET') {
         $caseId = (int) $matches[1];
+        $viewStmt = $pdo->prepare('UPDATE construction_case SET view_count = view_count + 1 WHERE id = ?');
+        $viewStmt->execute([$caseId]);
         $stmt = $pdo->prepare('SELECT * FROM construction_case WHERE id = ?');
         $stmt->execute([$caseId]);
         $case = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -1993,6 +2082,8 @@ if (strpos($path, '/api/') === 0) {
                 'user_id' => (int) $admin['constructor_user_id'],
                 'company_name' => $record['company_name'] ?? '',
                 'brand_name' => $record['brand_name'] ?? '',
+                'logo' => $record['logo'] ?? '',
+                'cover_image' => $record['cover_image'] ?? '',
                 'contact_name' => $record['contact_name'] ?? '',
                 'contact_phone' => $record['contact_phone'] ?? '',
                 'description' => $record['description'] ?? ($record['reason'] ?? ''),
@@ -2010,7 +2101,7 @@ if (strpos($path, '/api/') === 0) {
 
         $stmt = $pdo->prepare('
             UPDATE construction_permission
-            SET company_name = ?, brand_name = ?, contact_name = ?, contact_phone = ?, description = ?
+            SET company_name = ?, brand_name = ?, logo = ?, cover_image = ?, contact_name = ?, contact_phone = ?, description = ?
             WHERE user_id = ?
             ORDER BY id DESC
             LIMIT 1
@@ -2018,6 +2109,8 @@ if (strpos($path, '/api/') === 0) {
         $stmt->execute([
             trim((string) ($payload['company_name'] ?? '')),
             trim((string) ($payload['brand_name'] ?? '')),
+            trim((string) ($payload['logo'] ?? '')),
+            trim((string) ($payload['cover_image'] ?? '')),
             trim((string) ($payload['contact_name'] ?? '')),
             trim((string) ($payload['contact_phone'] ?? '')),
             trim((string) ($payload['description'] ?? '')),
@@ -2246,7 +2339,7 @@ if (strpos($path, '/api/') === 0) {
 
     if (preg_match('/^scripts\/(\d+)\/purchase-intent$/', $apiPath, $matches) && $method === 'POST') {
         $scriptId = (int) $matches[1];
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = jsonInput();
         $city = trim((string) ($data['city'] ?? ''));
         $contactName = trim((string) ($data['contact_name'] ?? ''));
         $contactPhone = trim((string) ($data['contact_phone'] ?? ''));
@@ -2359,7 +2452,7 @@ if (strpos($path, '/api/') === 0) {
         $limit = (int) ($_GET['limit'] ?? 20);
         $offset = max(0, ($page - 1) * $limit);
 
-        $stmt = $pdo->query("SELECT * FROM construction_case ORDER BY created_at DESC LIMIT $limit OFFSET $offset");
+        $stmt = $pdo->query("SELECT * FROM construction_case ORDER BY is_featured DESC, featured_sort ASC, created_at DESC LIMIT $limit OFFSET $offset");
         $cases = array_map('buildConstructionCaseItem', $stmt->fetchAll(PDO::FETCH_ASSOC));
 
         $countStmt = $pdo->query("SELECT COUNT(*) as total FROM construction_case");
@@ -2392,7 +2485,7 @@ if (strpos($path, '/api/') === 0) {
         $id = (int) $matches[1];
         $data = jsonInput();
         $stmt = $pdo->prepare('UPDATE construction_case SET status = "rejected", reject_reason = ? WHERE id = ?');
-        $stmt->execute([$data['review_note'] ?? '审核未通过', $id]);
+        $stmt->execute([$data['review_note'] ?? '瀹℃牳鏈€氳繃', $id]);
 
         echo json_encode([
             'code' => 200,
@@ -2415,16 +2508,30 @@ if (strpos($path, '/api/') === 0) {
 
     // Community API
     if (preg_match('/^community\/posts(\?.*)?$/', $apiPath) && $method === 'GET') {
-        $page = (int) ($_GET['page'] ?? 1);
-        $limit = (int) ($_GET['limit'] ?? 20);
-        $offset = max(0, ($page - 1) * $limit);
+        $sort = $_GET['sort'] ?? 'all';
 
-        $stmt = $pdo->prepare("SELECT * FROM community_post WHERE status = 'approved' ORDER BY created_at DESC LIMIT $limit OFFSET $offset");
-        $stmt->execute();
-        $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        $countStmt = $pdo->query("SELECT COUNT(*) as total FROM community_post WHERE status = 'approved'");
-        $total = (int) $countStmt->fetchColumn();
+        try {
+            if ($sort === 'hot') {
+                $stmt = $pdo->query("SELECT * FROM community_post ORDER BY comment_count DESC, created_at DESC");
+                $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $total = count($posts);
+            } elseif ($sort === 'latest') {
+                $stmt = $pdo->query("SELECT * FROM community_post ORDER BY created_at DESC");
+                $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $total = count($posts);
+            } else {
+                $stmt = $pdo->query("SELECT * FROM community_post ORDER BY created_at DESC");
+                $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $total = count($posts);
+            }
+        } catch (PDOException $e) {
+            echo json_encode([
+                'code' => 500,
+                'msg' => 'Database error: ' . $e->getMessage(),
+                'data' => ['list' => [], 'total' => 0]
+            ]);
+            exit;
+        }
 
         echo json_encode([
             'code' => 200,
@@ -2549,10 +2656,10 @@ if (strpos($path, '/api/') === 0) {
         $limit = $_GET['limit'] ?? 20;
         $offset = ($page - 1) * $limit;
         
-        $stmt = $pdo->query("SELECT * FROM community_post ORDER BY created_at DESC LIMIT $limit OFFSET $offset");
+        $stmt = $pdo->query("SELECT * FROM bbs_post ORDER BY created_at DESC LIMIT $limit OFFSET $offset");
         $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        $countStmt = $pdo->query("SELECT COUNT(*) as total FROM community_post");
+        $countStmt = $pdo->query("SELECT COUNT(*) as total FROM bbs_post");
         $total = $countStmt->fetchColumn();
         
         echo json_encode([
@@ -2569,7 +2676,7 @@ if (strpos($path, '/api/') === 0) {
     if (preg_match('/^admin\/community\/posts\/(\d+)\/approve$/', $apiPath, $matches) && $method === 'PUT') {
         $id = $matches[1];
         
-        $stmt = $pdo->prepare('UPDATE community_post SET status = "approved" WHERE id = ?');
+        $stmt = $pdo->prepare('UPDATE bbs_post SET status = "approved" WHERE id = ?');
         $stmt->execute([$id]);
         
         echo json_encode([
@@ -2582,7 +2689,7 @@ if (strpos($path, '/api/') === 0) {
     if (preg_match('/^admin\/community\/posts\/(\d+)\/reject$/', $apiPath, $matches) && $method === 'PUT') {
         $id = $matches[1];
         
-        $stmt = $pdo->prepare('UPDATE community_post SET status = "rejected" WHERE id = ?');
+        $stmt = $pdo->prepare('UPDATE bbs_post SET status = "rejected" WHERE id = ?');
         $stmt->execute([$id]);
         
         echo json_encode([
@@ -2595,7 +2702,7 @@ if (strpos($path, '/api/') === 0) {
     if (preg_match('/^admin\/community\/posts\/(\d+)$/', $apiPath, $matches) && $method === 'DELETE') {
         $id = $matches[1];
         
-        $stmt = $pdo->prepare('DELETE FROM community_post WHERE id = ?');
+        $stmt = $pdo->prepare('DELETE FROM bbs_post WHERE id = ?');
         $stmt->execute([$id]);
         
         echo json_encode([
@@ -2610,10 +2717,10 @@ if (strpos($path, '/api/') === 0) {
         $limit = $_GET['limit'] ?? 20;
         $offset = ($page - 1) * $limit;
         
-        $stmt = $pdo->query("SELECT * FROM community_comment ORDER BY created_at DESC LIMIT $limit OFFSET $offset");
+        $stmt = $pdo->query("SELECT * FROM bbs_comment ORDER BY created_at DESC LIMIT $limit OFFSET $offset");
         $comments = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        $countStmt = $pdo->query("SELECT COUNT(*) as total FROM community_comment");
+        $countStmt = $pdo->query("SELECT COUNT(*) as total FROM bbs_comment");
         $total = $countStmt->fetchColumn();
         
         echo json_encode([
@@ -2630,7 +2737,7 @@ if (strpos($path, '/api/') === 0) {
     if (preg_match('/^admin\/community\/comments\/(\d+)\/approve$/', $apiPath, $matches) && $method === 'PUT') {
         $id = $matches[1];
         
-        $stmt = $pdo->prepare('UPDATE community_comment SET status = "approved" WHERE id = ?');
+        $stmt = $pdo->prepare('UPDATE bbs_comment SET status = "approved" WHERE id = ?');
         $stmt->execute([$id]);
         
         echo json_encode([
@@ -2643,7 +2750,7 @@ if (strpos($path, '/api/') === 0) {
     if (preg_match('/^admin\/community\/comments\/(\d+)\/reject$/', $apiPath, $matches) && $method === 'PUT') {
         $id = $matches[1];
         
-        $stmt = $pdo->prepare('UPDATE community_comment SET status = "rejected" WHERE id = ?');
+        $stmt = $pdo->prepare('UPDATE bbs_comment SET status = "rejected" WHERE id = ?');
         $stmt->execute([$id]);
         
         echo json_encode([
@@ -2656,7 +2763,7 @@ if (strpos($path, '/api/') === 0) {
     if (preg_match('/^admin\/community\/comments\/(\d+)$/', $apiPath, $matches) && $method === 'DELETE') {
         $id = $matches[1];
         
-        $stmt = $pdo->prepare('DELETE FROM community_comment WHERE id = ?');
+        $stmt = $pdo->prepare('DELETE FROM bbs_comment WHERE id = ?');
         $stmt->execute([$id]);
         
         echo json_encode([
@@ -2756,12 +2863,17 @@ if (strpos($path, '/api/') === 0) {
             $pendingStmt->execute([$brandId]);
             $pendingScripts = (int) $pendingStmt->fetchColumn();
 
+            $approvedStmt = $pdo->prepare("SELECT COUNT(*) FROM script WHERE brand_id = ? AND status = 'approved'");
+            $approvedStmt->execute([$brandId]);
+            $approvedScripts = (int) $approvedStmt->fetchColumn();
+
             echo json_encode([
                 'code' => 200,
                 'msg' => 'Success',
                 'data' => [
                     'scripts' => $totalScripts,
                     'pending_scripts' => $pendingScripts,
+                    'approved_scripts' => $approvedScripts,
                     'brands' => 1,
                     'users' => 0,
                     'market_listings' => 0,
@@ -2800,17 +2912,46 @@ if (strpos($path, '/api/') === 0) {
             exit;
         }
 
+        $totalScripts = (int) $pdo->query('SELECT COUNT(*) FROM script')->fetchColumn();
+        $totalBrands = (int) $pdo->query('SELECT COUNT(*) FROM brand')->fetchColumn();
+        $totalConstructors = hasTable($pdo, 'construction_permission')
+            ? (int) $pdo->query("SELECT COUNT(*) FROM construction_permission WHERE role_type = 'constructor'")->fetchColumn()
+            : 0;
+        $totalUsers = hasTable($pdo, 'user') ? (int) $pdo->query('SELECT COUNT(*) FROM user')->fetchColumn() : 0;
+        $totalCommunityPosts = hasTable($pdo, 'community_post') ? (int) $pdo->query('SELECT COUNT(*) FROM community_post')->fetchColumn() : 0;
+        $totalCommunityComments = hasTable($pdo, 'community_comment') ? (int) $pdo->query('SELECT COUNT(*) FROM community_comment')->fetchColumn() : 0;
+
+        $pendingScripts = (int) $pdo->query("SELECT COUNT(*) FROM script WHERE status = 'pending'")->fetchColumn();
+        $pendingBrands = (int) $pdo->query("SELECT COUNT(*) FROM brand WHERE status = 'pending'")->fetchColumn();
+        $pendingMarketListings = hasTable($pdo, 'market_listing')
+            ? (int) $pdo->query("SELECT COUNT(*) FROM market_listing WHERE status = 'pending'")->fetchColumn()
+            : 0;
+        $pendingBrandPermissions = hasTable($pdo, 'construction_permission')
+            ? (int) $pdo->query("SELECT COUNT(*) FROM construction_permission WHERE role_type = 'brand' AND status = 'pending'")->fetchColumn()
+            : 0;
+        $pendingConstructorPermissions = hasTable($pdo, 'construction_permission')
+            ? (int) $pdo->query("SELECT COUNT(*) FROM construction_permission WHERE role_type = 'constructor' AND status = 'pending'")->fetchColumn()
+            : 0;
+        $pendingConstructionCases = hasTable($pdo, 'construction_case')
+            ? (int) $pdo->query("SELECT COUNT(*) FROM construction_case WHERE status = 'pending'")->fetchColumn()
+            : 0;
+
         echo json_encode([
             'code' => 200,
             'msg' => 'Success',
             'data' => [
-                'total_scripts' => 120,
-                'total_brands' => 35,
-                'total_users' => 500,
-                'total_market_listings' => 85,
-                'pending_scripts' => 5,
-                'pending_brands' => 2,
-                'pending_market_listings' => 8
+                'total_scripts' => $totalScripts,
+                'total_brands' => $totalBrands,
+                'total_constructors' => $totalConstructors,
+                'total_users' => $totalUsers,
+                'total_community_posts' => $totalCommunityPosts,
+                'total_community_comments' => $totalCommunityComments,
+                'pending_scripts' => $pendingScripts,
+                'pending_brands' => $pendingBrands,
+                'pending_market_listings' => $pendingMarketListings,
+                'pending_brand_permissions' => $pendingBrandPermissions,
+                'pending_constructor_permissions' => $pendingConstructorPermissions,
+                'pending_construction_cases' => $pendingConstructionCases
             ]
         ]);
         exit;
@@ -2831,7 +2972,7 @@ if (strpos($path, '/api/') === 0) {
 
     if (preg_match('/^admin\/categories\/(\d+)$/', $apiPath, $matches) && $method === 'PUT') {
         $id = $matches[1];
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = jsonInput();
         
         $stmt = $pdo->prepare('UPDATE category SET name = ?, sort_order = ? WHERE id = ?');
         $stmt->execute([$data['name'], $data['sort_order'], $id]);
@@ -2840,8 +2981,255 @@ if (strpos($path, '/api/') === 0) {
         exit;
     }
 
+    if ($apiPath === 'admin/brand-profile' && $method === 'GET') {
+        $admin = requireAdmin($pdo);
+        requireBrandAccount($admin);
+
+        $stmt = $pdo->prepare('SELECT id, name, logo, cover_image, description, follower_count, total_authorizations, status FROM brand WHERE id = ? LIMIT 1');
+        $stmt->execute([(int) $admin['brand_id']]);
+        $brand = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        echo json_encode([
+            'code' => 200,
+            'msg' => 'Success',
+            'data' => $brand ?: []
+        ]);
+        exit;
+    }
+
+    if ($apiPath === 'admin/brand-profile' && $method === 'PUT') {
+        $admin = requireAdmin($pdo);
+        requireBrandAccount($admin);
+        $payload = jsonInput();
+
+        $stmt = $pdo->prepare('UPDATE brand SET name = ?, logo = ?, cover_image = ?, description = ? WHERE id = ?');
+        $stmt->execute([
+            trim((string) ($payload['name'] ?? '')),
+            trim((string) ($payload['logo'] ?? '')),
+            trim((string) ($payload['cover_image'] ?? '')),
+            trim((string) ($payload['description'] ?? '')),
+            (int) $admin['brand_id'],
+        ]);
+
+        echo json_encode([
+            'code' => 200,
+            'msg' => 'Success'
+        ]);
+        exit;
+    }
+
+    if ($apiPath === 'admin/feature-tags' && $method === 'GET') {
+        $stmt = $pdo->query('SELECT id, name, sort_order, created_at FROM feature_tag ORDER BY sort_order ASC, id ASC');
+        $tags = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode([
+            'code' => 200,
+            'msg' => 'Success',
+            'data' => ['list' => $tags]
+        ]);
+        exit;
+    }
+
+    if ($apiPath === 'meta/feature-tags' && $method === 'GET') {
+        $stmt = $pdo->query('SELECT name FROM feature_tag ORDER BY sort_order ASC, id ASC');
+        $tags = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        echo json_encode([
+            'code' => 200,
+            'msg' => 'Success',
+            'data' => [
+                'list' => $tags
+            ]
+        ]);
+        exit;
+    }
+
+    if ($apiPath === 'meta/suitable-player-tags' && $method === 'GET') {
+        $stmt = $pdo->query('SELECT name FROM suitable_player_tag ORDER BY sort_order ASC, id ASC');
+        $tags = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        echo json_encode([
+            'code' => 200,
+            'msg' => 'Success',
+            'data' => [
+                'list' => $tags
+            ]
+        ]);
+        exit;
+    }
+
+    if ($apiPath === 'meta/script-type-tags' && $method === 'GET') {
+        $stmt = $pdo->query('SELECT name FROM script_type_tag ORDER BY sort_order ASC, id ASC');
+        $tags = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        echo json_encode([
+            'code' => 200,
+            'msg' => 'Success',
+            'data' => [
+                'list' => $tags
+            ]
+        ]);
+        exit;
+    }
+
+    if ($apiPath === 'admin/suitable-player-tags' && $method === 'GET') {
+        $stmt = $pdo->query('SELECT id, name, sort_order, created_at FROM suitable_player_tag ORDER BY sort_order ASC, id ASC');
+        $tags = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode([
+            'code' => 200,
+            'msg' => 'Success',
+            'data' => ['list' => $tags]
+        ]);
+        exit;
+    }
+
+    if ($apiPath === 'admin/suitable-player-tags' && $method === 'POST') {
+        $data = jsonInput();
+        $name = trim((string) ($data['name'] ?? ''));
+        $sortOrder = (int) ($data['sort_order'] ?? 0);
+
+        if ($name === '') {
+            echo json_encode(['code' => 422, 'msg' => '鏍囩鍚嶇О涓嶈兘涓虹┖']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare('INSERT INTO suitable_player_tag (name, sort_order) VALUES (?, ?)');
+        $stmt->execute([$name, $sortOrder]);
+
+        echo json_encode(['code' => 200, 'msg' => 'Success']);
+        exit;
+    }
+
+    if ($apiPath === 'admin/script-type-tags' && $method === 'GET') {
+        $stmt = $pdo->query('SELECT id, name, sort_order, created_at FROM script_type_tag ORDER BY sort_order ASC, id ASC');
+        $tags = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode([
+            'code' => 200,
+            'msg' => 'Success',
+            'data' => ['list' => $tags]
+        ]);
+        exit;
+    }
+
+    if ($apiPath === 'admin/script-type-tags' && $method === 'POST') {
+        $data = jsonInput();
+        $name = trim((string) ($data['name'] ?? ''));
+        $sortOrder = (int) ($data['sort_order'] ?? 0);
+
+        if ($name === '') {
+            echo json_encode(['code' => 422, 'msg' => '鏍囩鍚嶇О涓嶈兘涓虹┖']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare('INSERT INTO script_type_tag (name, sort_order) VALUES (?, ?)');
+        $stmt->execute([$name, $sortOrder]);
+
+        echo json_encode(['code' => 200, 'msg' => 'Success']);
+        exit;
+    }
+
+    if (preg_match('/^admin\/script-type-tags\/(\d+)$/', $apiPath, $matches) && $method === 'PUT') {
+        $id = (int) $matches[1];
+        $data = jsonInput();
+        $name = trim((string) ($data['name'] ?? ''));
+        $sortOrder = (int) ($data['sort_order'] ?? 0);
+
+        if ($name === '') {
+            echo json_encode(['code' => 422, 'msg' => '鏍囩鍚嶇О涓嶈兘涓虹┖']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare('UPDATE script_type_tag SET name = ?, sort_order = ? WHERE id = ?');
+        $stmt->execute([$name, $sortOrder, $id]);
+
+        echo json_encode(['code' => 200, 'msg' => 'Success']);
+        exit;
+    }
+
+    if (preg_match('/^admin\/script-type-tags\/(\d+)$/', $apiPath, $matches) && $method === 'DELETE') {
+        $id = (int) $matches[1];
+        $stmt = $pdo->prepare('DELETE FROM script_type_tag WHERE id = ?');
+        $stmt->execute([$id]);
+
+        echo json_encode(['code' => 200, 'msg' => 'Success']);
+        exit;
+    }
+
+    if (preg_match('/^admin\/suitable-player-tags\/(\d+)$/', $apiPath, $matches) && $method === 'PUT') {
+        $id = (int) $matches[1];
+        $data = jsonInput();
+        $name = trim((string) ($data['name'] ?? ''));
+        $sortOrder = (int) ($data['sort_order'] ?? 0);
+
+        if ($name === '') {
+            echo json_encode(['code' => 422, 'msg' => '鏍囩鍚嶇О涓嶈兘涓虹┖']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare('UPDATE suitable_player_tag SET name = ?, sort_order = ? WHERE id = ?');
+        $stmt->execute([$name, $sortOrder, $id]);
+
+        echo json_encode(['code' => 200, 'msg' => 'Success']);
+        exit;
+    }
+
+    if (preg_match('/^admin\/suitable-player-tags\/(\d+)$/', $apiPath, $matches) && $method === 'DELETE') {
+        $id = (int) $matches[1];
+        $stmt = $pdo->prepare('DELETE FROM suitable_player_tag WHERE id = ?');
+        $stmt->execute([$id]);
+
+        echo json_encode(['code' => 200, 'msg' => 'Success']);
+        exit;
+    }
+
+    if ($apiPath === 'admin/feature-tags' && $method === 'POST') {
+        $data = jsonInput();
+        $name = trim((string) ($data['name'] ?? ''));
+        $sortOrder = (int) ($data['sort_order'] ?? 0);
+
+        if ($name === '') {
+            echo json_encode(['code' => 422, 'msg' => '鏍囩鍚嶇О涓嶈兘涓虹┖']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare('INSERT INTO feature_tag (name, sort_order) VALUES (?, ?)');
+        $stmt->execute([$name, $sortOrder]);
+
+        echo json_encode(['code' => 200, 'msg' => 'Success']);
+        exit;
+    }
+
+    if (preg_match('/^admin\/feature-tags\/(\d+)$/', $apiPath, $matches) && $method === 'PUT') {
+        $id = (int) $matches[1];
+        $data = jsonInput();
+        $name = trim((string) ($data['name'] ?? ''));
+        $sortOrder = (int) ($data['sort_order'] ?? 0);
+
+        if ($name === '') {
+            echo json_encode(['code' => 422, 'msg' => '鏍囩鍚嶇О涓嶈兘涓虹┖']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare('UPDATE feature_tag SET name = ?, sort_order = ? WHERE id = ?');
+        $stmt->execute([$name, $sortOrder, $id]);
+
+        echo json_encode(['code' => 200, 'msg' => 'Success']);
+        exit;
+    }
+
+    if (preg_match('/^admin\/feature-tags\/(\d+)$/', $apiPath, $matches) && $method === 'DELETE') {
+        $id = (int) $matches[1];
+        $stmt = $pdo->prepare('DELETE FROM feature_tag WHERE id = ?');
+        $stmt->execute([$id]);
+
+        echo json_encode(['code' => 200, 'msg' => 'Success']);
+        exit;
+    }
+
     if ($apiPath === 'admin/categories' && $method === 'POST') {
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = jsonInput();
         
         $stmt = $pdo->prepare('INSERT INTO category (name, sort_order) VALUES (?, ?)');
         $stmt->execute([$data['name'], $data['sort_order']]);
@@ -2879,7 +3267,7 @@ if (strpos($path, '/api/') === 0) {
         }
 
         $stmt = $pdo->prepare("
-            SELECT b.id, b.name, b.logo, b.description, b.follower_count, b.total_authorizations, b.status, b.created_at,
+            SELECT b.id, b.name, b.logo, b.cover_image, b.description, b.follower_count, b.total_authorizations, b.is_featured, b.featured_sort, b.status, b.created_at,
                    a.username AS account_username
             FROM brand b
             LEFT JOIN admin a ON a.brand_id = b.id AND a.role = 'brand'
@@ -2934,7 +3322,7 @@ if (strpos($path, '/api/') === 0) {
         $admin = requireAdmin($pdo);
         requireSuperAdmin($admin);
         $id = $matches[1];
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = jsonInput();
         $status = $data['status'];
         
         $stmt = $pdo->prepare('UPDATE brand SET status = ? WHERE id = ?');
@@ -2947,13 +3335,25 @@ if (strpos($path, '/api/') === 0) {
     if ($apiPath === 'admin/brands' && $method === 'POST') {
         $admin = requireAdmin($pdo);
         requireSuperAdmin($admin);
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = jsonInput();
 
-        $stmt = $pdo->prepare('INSERT INTO brand (name, logo, description, status) VALUES (?, ?, ?, ?)');
+        if (!empty($data['is_featured'])) {
+            $featuredCountStmt = $pdo->query('SELECT COUNT(*) FROM brand WHERE is_featured = 1');
+            $featuredCount = (int) $featuredCountStmt->fetchColumn();
+            if ($featuredCount >= 5) {
+                echo json_encode(['code' => 422, 'msg' => '品牌轮播最多只能置顶 5 个品牌']);
+                exit;
+            }
+        }
+
+        $stmt = $pdo->prepare('INSERT INTO brand (name, logo, cover_image, description, is_featured, featured_sort, status) VALUES (?, ?, ?, ?, ?, ?, ?)');
         $stmt->execute([
             $data['name'],
             $data['logo'] ?? '',
+            $data['cover_image'] ?? '',
             $data['description'] ?? '',
+            !empty($data['is_featured']) ? 1 : 0,
+            max(0, (int) ($data['featured_sort'] ?? 0)),
             $data['status'] ?? 'pending'
         ]);
 
@@ -2967,7 +3367,7 @@ if (strpos($path, '/api/') === 0) {
     if (preg_match('/^admin\/brands\/(\d+)$/', $apiPath, $matches) && $method === 'PUT') {
         $admin = requireAdmin($pdo);
         $id = $matches[1];
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = jsonInput();
 
         if (($admin['role'] ?? '') === 'brand' && (int) ($admin['brand_id'] ?? 0) !== (int) $id) {
             http_response_code(403);
@@ -2979,8 +3379,27 @@ if (strpos($path, '/api/') === 0) {
             ? 'approved'
             : ($data['status'] ?? 'pending');
 
-        $stmt = $pdo->prepare('UPDATE brand SET name = ?, logo = ?, description = ?, status = ? WHERE id = ?');
-        $stmt->execute([$data['name'], $data['logo'] ?? '', $data['description'] ?? '', $nextStatus, $id]);
+        if (!empty($data['is_featured'])) {
+            $featuredCountStmt = $pdo->prepare('SELECT COUNT(*) FROM brand WHERE is_featured = 1 AND id <> ?');
+            $featuredCountStmt->execute([$id]);
+            $featuredCount = (int) $featuredCountStmt->fetchColumn();
+            if ($featuredCount >= 5) {
+                echo json_encode(['code' => 422, 'msg' => '品牌轮播最多只能置顶 5 个品牌']);
+                exit;
+            }
+        }
+
+        $stmt = $pdo->prepare('UPDATE brand SET name = ?, logo = ?, cover_image = ?, description = ?, is_featured = ?, featured_sort = ?, status = ? WHERE id = ?');
+        $stmt->execute([
+            $data['name'],
+            $data['logo'] ?? '',
+            $data['cover_image'] ?? '',
+            $data['description'] ?? '',
+            !empty($data['is_featured']) ? 1 : 0,
+            max(0, (int) ($data['featured_sort'] ?? 0)),
+            $nextStatus,
+            $id
+        ]);
 
         if (($admin['role'] ?? '') !== 'brand') {
             createOrUpdateBrandAdmin($pdo, (int) $id, $data);
@@ -3040,7 +3459,7 @@ if (strpos($path, '/api/') === 0) {
         $stmt->execute($params);
         $scripts = array_map(static function (array $row): array {
             $row['horror_level'] = (int) ($row['horror_level'] ?? 0);
-            $row['area_size'] = (int) ($row['area_size'] ?? 0);
+            $row['area_size'] = $row['area_size'] ?? '';
             $row['price_tier1'] = (float) ($row['price_tier1'] ?? 0);
             $row['is_home_featured'] = (int) ($row['is_home_featured'] ?? 0);
             $row['home_featured_sort'] = (int) ($row['home_featured_sort'] ?? 0);
@@ -3069,7 +3488,7 @@ if (strpos($path, '/api/') === 0) {
 
     if ($apiPath === 'admin/scripts' && $method === 'POST') {
         $admin = requireAdmin($pdo);
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = jsonInput();
 
         $payload = normalizeScriptPayload(is_array($data) ? $data : []);
         $brandId = (int) ($payload['brand_id'] ?? 0);
@@ -3129,7 +3548,7 @@ if (strpos($path, '/api/') === 0) {
     if (preg_match('/^admin\/scripts\/(\d+)$/', $apiPath, $matches) && $method === 'PUT') {
         $admin = requireAdmin($pdo);
         $id = $matches[1];
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = jsonInput();
 
         if (($admin['role'] ?? '') === 'brand') {
             requireBrandAccount($admin);
@@ -3226,7 +3645,7 @@ if (strpos($path, '/api/') === 0) {
         $admin = requireAdmin($pdo);
         requireSuperAdmin($admin);
         $id = $matches[1];
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = jsonInput();
         $status = $data['status'];
         
         $stmt = $pdo->prepare('UPDATE script SET status = ? WHERE id = ?');
@@ -3268,7 +3687,7 @@ if (strpos($path, '/api/') === 0) {
 
     if (preg_match('/^admin\/market\/listings\/(\d+)\/audit$/', $apiPath, $matches) && $method === 'PUT') {
         $id = $matches[1];
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = jsonInput();
         $status = $data['status'];
         
         $stmt = $pdo->prepare('UPDATE market_listing SET status = ? WHERE id = ?');
@@ -3280,7 +3699,7 @@ if (strpos($path, '/api/') === 0) {
 
     if (preg_match('/^admin\/market\/listings\/(\d+)\/featured$/', $apiPath, $matches) && $method === 'PUT') {
         $id = $matches[1];
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = jsonInput();
         $featured = $data['featured'];
         
         $stmt = $pdo->prepare('UPDATE market_listing SET is_featured = ? WHERE id = ?');
@@ -3348,7 +3767,7 @@ if (strpos($path, '/api/') === 0) {
         $columns = ['title', 'type', 'price', 'status'];
         $values = [
             $data['title'] ?? '',
-            $data['type'] ?? 'sell',
+            $data['type'] ?? 'discussion',
             $data['price'] ?? 0,
             'pending',
         ];
@@ -3368,11 +3787,20 @@ if (strpos($path, '/api/') === 0) {
             implode(', ', array_fill(0, count($columns), '?'))
         ));
         $stmt->execute($values);
+        $listingId = (int) $pdo->lastInsertId();
+
+        // Handle images
+        if (isset($data['images']) && is_array($data['images'])) {
+            foreach ($data['images'] as $sortOrder => $imageUrl) {
+                $stmt = $pdo->prepare('INSERT INTO market_image (listing_id, url, sort_order) VALUES (?, ?, ?)');
+                $stmt->execute([$listingId, $imageUrl, $sortOrder]);
+            }
+        }
 
         echo json_encode([
             'code' => 200,
             'msg' => 'Success',
-            'data' => ['id' => (int) $pdo->lastInsertId()],
+            'data' => ['id' => $listingId],
         ]);
         exit;
     }
@@ -3400,7 +3828,7 @@ if (strpos($path, '/api/') === 0) {
         if (!isset($detail['description'])) {
             $detail['description'] = '';
         }
-        $detail['user_nickname'] = '匿名用户';
+        $detail['user_nickname'] = '鍖垮悕鐢ㄦ埛';
 
         echo json_encode([
             'code' => 200,
@@ -3477,7 +3905,7 @@ if (strpos($path, '/api/') === 0) {
     }
 
     if ($apiPath === 'admin/home/banners' && $method === 'POST') {
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = jsonInput();
         
         $stmt = $pdo->prepare('INSERT INTO home_banner (image, link, sort_order) VALUES (?, ?, ?)');
         $stmt->execute([$data['image'], $data['link'], $data['sort_order']]);
@@ -3488,7 +3916,7 @@ if (strpos($path, '/api/') === 0) {
 
     if (preg_match('/^admin\/home\/banners\/(\d+)$/', $apiPath, $matches) && $method === 'PUT') {
         $id = $matches[1];
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = jsonInput();
         
         $stmt = $pdo->prepare('UPDATE home_banner SET image = ?, link = ?, sort_order = ? WHERE id = ?');
         $stmt->execute([$data['image'], $data['link'], $data['sort_order'], $id]);
@@ -3520,7 +3948,7 @@ if (strpos($path, '/api/') === 0) {
     }
 
     if ($apiPath === 'admin/home/ads' && $method === 'POST') {
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = jsonInput();
         
         $stmt = $pdo->prepare('INSERT INTO home_ad (image, link, sort_order) VALUES (?, ?, ?)');
         $stmt->execute([$data['image'], $data['link'], $data['sort_order']]);
@@ -3531,7 +3959,7 @@ if (strpos($path, '/api/') === 0) {
 
     if (preg_match('/^admin\/home\/ads\/(\d+)$/', $apiPath, $matches) && $method === 'PUT') {
         $id = $matches[1];
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = jsonInput();
         
         $stmt = $pdo->prepare('UPDATE home_ad SET image = ?, link = ?, sort_order = ? WHERE id = ?');
         $stmt->execute([$data['image'], $data['link'], $data['sort_order'], $id]);
@@ -3546,6 +3974,105 @@ if (strpos($path, '/api/') === 0) {
         $stmt = $pdo->prepare('DELETE FROM home_ad WHERE id = ?');
         $stmt->execute([$id]);
         
+        echo json_encode(['code' => 200, 'msg' => 'Success']);
+        exit;
+    }
+
+    if ($apiPath === 'admin/popup-ads' && $method === 'GET') {
+        $admin = requireAdmin($pdo);
+        requireSuperAdmin($admin);
+
+        $stmt = $pdo->prepare('SELECT p.*, s.name as script_name FROM popup_ad p LEFT JOIN script s ON p.script_id = s.id ORDER BY p.sort_order ASC, p.id DESC');
+        $stmt->execute();
+        $ads = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        echo json_encode([
+            'code' => 200,
+            'msg' => 'Success',
+            'data' => ['list' => $ads]
+        ]);
+        exit;
+    }
+
+    if (preg_match('/^admin\/construction-cases\/(\d+)\/featured$/', $apiPath, $matches) && $method === 'PUT') {
+        $id = (int) $matches[1];
+        $data = jsonInput();
+        $featured = !empty($data['featured']) ? 1 : 0;
+        $featuredSort = max(0, (int) ($data['featured_sort'] ?? 0));
+
+        if ($featured) {
+            $featuredCountStmt = $pdo->prepare('SELECT COUNT(*) FROM construction_case WHERE is_featured = 1 AND id <> ?');
+            $featuredCountStmt->execute([$id]);
+            $featuredCount = (int) $featuredCountStmt->fetchColumn();
+            if ($featuredCount >= 5) {
+                echo json_encode(['code' => 422, 'msg' => '案例轮播最多只能置顶 5 个案例']);
+                exit;
+            }
+        }
+
+        $stmt = $pdo->prepare('UPDATE construction_case SET is_featured = ?, featured_sort = ? WHERE id = ?');
+        $stmt->execute([$featured, $featuredSort, $id]);
+
+        echo json_encode([
+            'code' => 200,
+            'msg' => 'Success'
+        ]);
+        exit;
+    }
+
+    if ($apiPath === 'admin/popup-ads' && $method === 'POST') {
+        $admin = requireAdmin($pdo);
+        requireSuperAdmin($admin);
+
+        $data = jsonInput();
+        $image = trim($data['image'] ?? '');
+        $scriptId = (int) ($data['script_id'] ?? 0);
+        $isActive = (int) ($data['is_active'] ?? 1);
+        $sortOrder = (int) ($data['sort_order'] ?? 0);
+
+        if (!$image || !$scriptId) {
+            echo json_encode(['code' => 422, 'msg' => '鍥剧墖鍜屽墽鏈琁D涓嶈兘涓虹┖']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare('INSERT INTO popup_ad (image, script_id, is_active, sort_order) VALUES (?, ?, ?, ?)');
+        $stmt->execute([$image, $scriptId, $isActive, $sortOrder]);
+
+        echo json_encode(['code' => 200, 'msg' => 'Success', 'data' => ['id' => $pdo->lastInsertId()]]);
+        exit;
+    }
+
+    if (preg_match('/^admin\/popup-ads\/(\d+)$/', $apiPath, $matches) && $method === 'PUT') {
+        $admin = requireAdmin($pdo);
+        requireSuperAdmin($admin);
+
+        $id = (int) $matches[1];
+        $data = jsonInput();
+        $image = trim($data['image'] ?? '');
+        $scriptId = (int) ($data['script_id'] ?? 0);
+        $isActive = (int) ($data['is_active'] ?? 1);
+        $sortOrder = (int) ($data['sort_order'] ?? 0);
+
+        if (!$image || !$scriptId) {
+            echo json_encode(['code' => 422, 'msg' => '鍥剧墖鍜屽墽鏈琁D涓嶈兘涓虹┖']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare('UPDATE popup_ad SET image = ?, script_id = ?, is_active = ?, sort_order = ? WHERE id = ?');
+        $stmt->execute([$image, $scriptId, $isActive, $sortOrder, $id]);
+
+        echo json_encode(['code' => 200, 'msg' => 'Success']);
+        exit;
+    }
+
+    if (preg_match('/^admin\/popup-ads\/(\d+)$/', $apiPath, $matches) && $method === 'DELETE') {
+        $admin = requireAdmin($pdo);
+        requireSuperAdmin($admin);
+
+        $id = (int) $matches[1];
+        $stmt = $pdo->prepare('DELETE FROM popup_ad WHERE id = ?');
+        $stmt->execute([$id]);
+
         echo json_encode(['code' => 200, 'msg' => 'Success']);
         exit;
     }
@@ -3565,6 +4092,341 @@ if (strpos($path, '/api/') === 0) {
         exit;
     }
 
+    // ==================== BBS API ====================
+
+    // GET /api/bbs/posts - 鑾峰彇甯栧瓙鍒楄〃
+    if ($apiPath === 'bbs/posts' && $method === 'GET') {
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $limit = min(50, max(1, (int) ($_GET['limit'] ?? 20)));
+        $offset = ($page - 1) * $limit;
+        $sort = trim($_GET['sort'] ?? 'latest');
+
+        $orderBy = 'created_at DESC';
+        if ($sort === 'hot') {
+            $orderBy = 'like_count DESC, comment_count DESC, created_at DESC';
+        } elseif ($sort === 'featured') {
+            $orderBy = 'is_featured DESC, created_at DESC';
+        }
+
+        $stmt = $pdo->prepare("SELECT id, user_id, user_nickname, user_avatar, title, content, images, video, video_cover, like_count, comment_count, view_count, status, is_featured, created_at FROM bbs_post WHERE status = 'approved' ORDER BY $orderBy LIMIT $limit OFFSET $offset");
+        $stmt->execute();
+        $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($posts as &$post) {
+            if ($post['images']) {
+                $post['images'] = json_decode($post['images'], true) ?: [];
+            } else {
+                $post['images'] = [];
+            }
+        }
+        unset($post);
+
+        $countStmt = $pdo->query("SELECT COUNT(*) FROM bbs_post WHERE status = 'approved'");
+        $total = (int) $countStmt->fetchColumn();
+
+        echo json_encode([
+            'code' => 200,
+            'msg' => 'Success',
+            'data' => [
+                'list' => $posts,
+                'total' => $total,
+                'page' => $page,
+                'limit' => $limit
+            ]
+        ]);
+        exit;
+    }
+
+    // POST /api/bbs/posts - 鍒涘缓甯栧瓙
+    if ($apiPath === 'bbs/posts' && $method === 'POST') {
+        $user = requireUser($pdo);
+        $data = jsonInput();
+
+        $title = trim($data['title'] ?? '');
+        $content = trim($data['content'] ?? '');
+        $images = $data['images'] ?? [];
+        $video = trim($data['video'] ?? '');
+        $videoCover = trim($data['video_cover'] ?? '');
+
+        if (!$content && empty($images) && !$video) {
+            echo json_encode(['code' => 422, 'msg' => '鍐呭涓嶈兘涓虹┖']);
+            exit;
+        }
+
+        $imagesJson = json_encode($images);
+
+        $stmt = $pdo->prepare('INSERT INTO bbs_post (user_id, user_nickname, user_avatar, title, content, images, video, video_cover, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([
+            $user['id'],
+            $user['nickname'] ?? '',
+            $user['avatar'] ?? '',
+            $title,
+            $content,
+            $imagesJson,
+            $video,
+            $videoCover,
+            'approved'
+        ]);
+
+        $postId = $pdo->lastInsertId();
+
+        echo json_encode([
+            'code' => 200,
+            'msg' => 'Success',
+            'data' => ['id' => $postId]
+        ]);
+        exit;
+    }
+
+    // GET /api/bbs/posts/:id - 鑾峰彇甯栧瓙璇︽儏
+    if (preg_match('/^bbs\/posts\/(\d+)$/', $apiPath, $matches) && $method === 'GET') {
+        $postId = (int) $matches[1];
+
+        $stmt = $pdo->prepare("SELECT id, user_id, user_nickname, user_avatar, title, content, images, video, video_cover, like_count, comment_count, view_count, status, is_featured, created_at FROM bbs_post WHERE id = ? AND status = 'approved'");
+        $stmt->execute([$postId]);
+        $post = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$post) {
+            echo json_encode(['code' => 404, 'msg' => 'Post not found']);
+            exit;
+        }
+
+        if ($post['images']) {
+            $post['images'] = json_decode($post['images'], true) ?: [];
+        } else {
+            $post['images'] = [];
+        }
+
+        $viewStmt = $pdo->prepare('UPDATE bbs_post SET view_count = view_count + 1 WHERE id = ?');
+        $viewStmt->execute([$postId]);
+
+        echo json_encode([
+            'code' => 200,
+            'msg' => 'Success',
+            'data' => $post
+        ]);
+        exit;
+    }
+
+    // DELETE /api/bbs/posts/:id - 鍒犻櫎甯栧瓙
+    if (preg_match('/^bbs\/posts\/(\d+)$/', $apiPath, $matches) && $method === 'DELETE') {
+        $user = requireUser($pdo);
+        $admin = tryRequireAdmin($pdo);
+        $postId = (int) $matches[1];
+
+        $stmt = $pdo->prepare('SELECT user_id FROM bbs_post WHERE id = ?');
+        $stmt->execute([$postId]);
+        $post = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$post) {
+            echo json_encode(['code' => 404, 'msg' => 'Post not found']);
+            exit;
+        }
+
+        if ($post['user_id'] != $user['id'] && !$admin) {
+            echo json_encode(['code' => 403, 'msg' => 'Not authorized']);
+            exit;
+        }
+
+        $deleteStmt = $pdo->prepare('DELETE FROM bbs_post WHERE id = ?');
+        $deleteStmt->execute([$postId]);
+
+        $deleteCommentsStmt = $pdo->prepare('DELETE FROM bbs_comment WHERE post_id = ?');
+        $deleteCommentsStmt->execute([$postId]);
+
+        echo json_encode([
+            'code' => 200,
+            'msg' => 'Success'
+        ]);
+        exit;
+    }
+
+    // POST /api/bbs/posts/:id/like - 鐐硅禐甯栧瓙
+    if (preg_match('/^bbs\/posts\/(\d+)\/like$/', $apiPath, $matches) && $method === 'POST') {
+        $user = requireUser($pdo);
+        $postId = (int) $matches[1];
+
+        $stmt = $pdo->prepare('UPDATE bbs_post SET like_count = like_count + 1 WHERE id = ?');
+        $stmt->execute([$postId]);
+
+        echo json_encode([
+            'code' => 200,
+            'msg' => 'Success'
+        ]);
+        exit;
+    }
+
+    // GET /api/bbs/posts/:id/comments - 鑾峰彇璇勮鍒楄〃
+    if (preg_match('/^bbs\/posts\/(\d+)\/comments$/', $apiPath, $matches) && $method === 'GET') {
+        $postId = (int) $matches[1];
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $limit = min(50, max(1, (int) ($_GET['limit'] ?? 20)));
+        $offset = ($page - 1) * $limit;
+
+        $stmt = $pdo->prepare("SELECT id, post_id, user_id, user_nickname, user_avatar, content, like_count, parent_id, created_at FROM bbs_comment WHERE post_id = ? ORDER BY created_at ASC LIMIT $limit OFFSET $offset");
+        $stmt->execute([$postId]);
+        $comments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM bbs_comment WHERE post_id = ?');
+        $countStmt->execute([$postId]);
+        $total = (int) $countStmt->fetchColumn();
+
+        echo json_encode([
+            'code' => 200,
+            'msg' => 'Success',
+            'data' => [
+                'list' => $comments,
+                'total' => $total,
+                'page' => $page,
+                'limit' => $limit
+            ]
+        ]);
+        exit;
+    }
+
+    // POST /api/bbs/posts/:id/comments - 娣诲姞璇勮
+    if (preg_match('/^bbs\/posts\/(\d+)\/comments$/', $apiPath, $matches) && $method === 'POST') {
+        $user = requireUser($pdo);
+        $postId = (int) $matches[1];
+        $data = jsonInput();
+
+        $content = trim($data['content'] ?? '');
+        $parentId = (int) ($data['parent_id'] ?? 0);
+
+        if (!$content) {
+            echo json_encode(['code' => 422, 'msg' => '璇勮鍐呭涓嶈兘涓虹┖']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare('INSERT INTO bbs_comment (post_id, user_id, user_nickname, user_avatar, content, parent_id) VALUES (?, ?, ?, ?, ?, ?)');
+        $stmt->execute([
+            $postId,
+            $user['id'],
+            $user['nickname'] ?? '',
+            $user['avatar'] ?? '',
+            $content,
+            $parentId
+        ]);
+
+        $commentId = $pdo->lastInsertId();
+
+        $updateStmt = $pdo->prepare('UPDATE bbs_post SET comment_count = comment_count + 1 WHERE id = ?');
+        $updateStmt->execute([$postId]);
+
+        echo json_encode([
+            'code' => 200,
+            'msg' => 'Success',
+            'data' => ['id' => $commentId]
+        ]);
+        exit;
+    }
+
+    // DELETE /api/bbs/comments/:id - 鍒犻櫎璇勮
+    if (preg_match('/^bbs\/comments\/(\d+)$/', $apiPath, $matches) && $method === 'DELETE') {
+        $user = requireUser($pdo);
+        $admin = tryRequireAdmin($pdo);
+        $commentId = (int) $matches[1];
+
+        $stmt = $pdo->prepare('SELECT user_id, post_id FROM bbs_comment WHERE id = ?');
+        $stmt->execute([$commentId]);
+        $comment = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$comment) {
+            echo json_encode(['code' => 404, 'msg' => 'Comment not found']);
+            exit;
+        }
+
+        if ($comment['user_id'] != $user['id'] && !$admin) {
+            echo json_encode(['code' => 403, 'msg' => 'Not authorized']);
+            exit;
+        }
+
+        $deleteStmt = $pdo->prepare('DELETE FROM bbs_comment WHERE id = ?');
+        $deleteStmt->execute([$commentId]);
+
+        $updateStmt = $pdo->prepare('UPDATE bbs_post SET comment_count = GREATEST(0, comment_count - 1) WHERE id = ?');
+        $updateStmt->execute([$comment['post_id']]);
+
+        echo json_encode([
+            'code' => 200,
+            'msg' => 'Success'
+        ]);
+        exit;
+    }
+
+    // GET /api/bbs/comments - 鑾峰彇鎵€鏈夎瘎璁猴紙绠＄悊鍛樼敤锛?
+    if ($apiPath === 'bbs/comments' && $method === 'GET') {
+        $admin = requireAdmin($pdo);
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $limit = min(50, max(1, (int) ($_GET['limit'] ?? 20)));
+        $offset = ($page - 1) * $limit;
+
+        $stmt = $pdo->prepare("SELECT id, post_id, user_id, user_nickname, user_avatar, content, like_count, parent_id, created_at FROM bbs_comment ORDER BY created_at DESC LIMIT $limit OFFSET $offset");
+        $stmt->execute();
+        $comments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $countStmt = $pdo->query('SELECT COUNT(*) FROM bbs_comment');
+        $total = (int) $countStmt->fetchColumn();
+
+        echo json_encode([
+            'code' => 200,
+            'msg' => 'Success',
+            'data' => [
+                'list' => $comments,
+                'total' => $total,
+                'page' => $page,
+                'limit' => $limit
+            ]
+        ]);
+        exit;
+    }
+
+    // ==================== Upload API ====================
+
+    // POST /api/upload - 涓婁紶鍥剧墖鎴栬棰?
+    if ($apiPath === 'upload' && $method === 'POST') {
+        $user = requireUser($pdo);
+
+        if (empty($_FILES['file'])) {
+            echo json_encode(['code' => 422, 'msg' => 'No file uploaded']);
+            exit;
+        }
+
+        $file = $_FILES['file'];
+        $allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'webm'];
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+        if (!in_array($ext, $allowedExts)) {
+            echo json_encode(['code' => 422, 'msg' => 'File type not allowed']);
+            exit;
+        }
+
+        if ($file['size'] > 50 * 1024 * 1024) {
+            echo json_encode(['code' => 422, 'msg' => 'File size too large (max 50MB)']);
+            exit;
+        }
+
+        $uploadDir = __DIR__ . '/uploads/bbs/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        $filename = md5(uniqid()) . '.' . $ext;
+        $filepath = $uploadDir . $filename;
+
+        if (move_uploaded_file($file['tmp_name'], $filepath)) {
+            $url = '/uploads/bbs/' . $filename;
+            echo json_encode([
+                'code' => 200,
+                'msg' => 'Success',
+                'data' => ['url' => $url]
+            ]);
+        } else {
+            echo json_encode(['code' => 500, 'msg' => 'Failed to save file']);
+        }
+        exit;
+    }
+
     // Default response
     echo json_encode(['code' => 404, 'msg' => 'API endpoint not found']);
 } else {
@@ -3577,6 +4439,7 @@ if (strpos($path, '/api/') === 0) {
             'png' => 'image/png',
             'gif' => 'image/gif',
             'webp' => 'image/webp',
+            'svg' => 'image/svg+xml',
             'mp4' => 'video/mp4',
             'mov' => 'video/quicktime',
             'webm' => 'video/webm',
@@ -3592,3 +4455,4 @@ if (strpos($path, '/api/') === 0) {
         echo json_encode(['code' => 404, 'msg' => 'File not found']);
     }
 }
+

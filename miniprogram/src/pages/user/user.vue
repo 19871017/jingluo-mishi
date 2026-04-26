@@ -22,6 +22,7 @@
         <view v-if="!auth.isLoggedIn" class="login-panel">
           <text class="login-panel-title">微信授权登录开放后可体验完整功能</text>
           <text class="login-panel-desc">登录后可发帖、评论、申请施工案例权限，并同步你的浏览与互动记录。</text>
+          <button class="demo-login-btn" @click="demoLogin">演示登录</button>
         </view>
       </view>
 
@@ -210,6 +211,12 @@ function logout() {
   stats.value = { favorites: 0, follows: 0, listings: 0, interests: 0 }
 }
 
+async function demoLogin() {
+  await auth.quickLogin()
+  uni.showToast({ title: '演示登录成功', icon: 'success' })
+  loadStats()
+}
+
 onMounted(loadStats)
 onMounted(() => syncCustomTabBar(4))
 </script>
@@ -353,6 +360,17 @@ onMounted(() => syncCustomTabBar(4))
   font-size: 22rpx;
   line-height: 1.65;
   color: rgba(255, 255, 255, 0.9);
+}
+
+.demo-login-btn {
+  margin-top: 20rpx;
+  padding: 16rpx 32rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #ffb24c, #ff7b00);
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 700;
+  box-shadow: 0 10rpx 20rpx rgba(255, 138, 31, 0.3);
 }
 
 .section-card {

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <circle cx="1040" cy="180" r="180" fill="#f8fafc" fill-opacity="0.08"/>
+  <rect x="120" y="120" width="420" height="360" rx="48" fill="#ffffff" fill-opacity="0.08"/>
+  <text x="140" y="248" font-size="92" font-weight="800" fill="#f8fafc" font-family="Arial, sans-serif">Case Team</text>
+  <text x="140" y="334" font-size="42" fill="#cbd5e1" font-family="Arial, sans-serif">Construction & Scene Delivery Partner</text>
+  <text x="140" y="470" font-size="34" fill="#e2e8f0" font-family="Arial, sans-serif">施工落地 · 场景执行 · 机关装配</text>
+</svg>

@@ -36,6 +36,13 @@
           </template>
         </el-table-column>
         <el-table-column prop="account_username" label="品牌后台账号" min-width="180" />
+        <el-table-column label="轮播置顶" width="120">
+          <template #default="{ row }">
+            <el-tag v-if="Number(row.is_featured) > 0" type="success" effect="plain">已置顶</el-tag>
+            <el-tag v-else effect="plain">未置顶</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="featured_sort" label="轮播排序" width="100" />
         <el-table-column prop="status" label="审核状态" width="100">
           <template #default="{ row }">
             <el-tag :type="statusType(row.status)">{{ statusText(row.status) }}</el-tag>
@@ -94,6 +101,13 @@
             <el-option label="已拒绝" value="rejected" />
           </el-select>
         </el-form-item>
+        <el-form-item label="品牌轮播置顶">
+          <el-switch v-model="form.is_featured" :active-value="1" :inactive-value="0" />
+          <span class="switch-help">置顶后，该品牌会进入小程序品牌页轮播图，最多展示 5 个。</span>
+        </el-form-item>
+        <el-form-item label="轮播排序">
+          <el-input-number v-model="form.featured_sort" :min="0" :disabled="!form.is_featured" style="width: 220px" />
+        </el-form-item>
 
         <el-divider content-position="left">品牌方后台账号</el-divider>
         <el-form-item label="登录账号">
@@ -124,6 +138,14 @@
         <el-descriptions-item label="品牌介绍">
           {{ currentBrand?.description || '暂无品牌介绍' }}
         </el-descriptions-item>
+        <el-descriptions-item label="轮播置顶">
+          <el-tag :type="Number(currentBrand?.is_featured || 0) > 0 ? 'success' : 'info'">
+            {{ Number(currentBrand?.is_featured || 0) > 0 ? '已置顶' : '未置顶' }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="轮播排序">
+          {{ currentBrand?.featured_sort || 0 }}
+        </el-descriptions-item>
         <el-descriptions-item label="审核状态">
           <el-tag :type="statusType(currentBrand?.status)">{{ statusText(currentBrand?.status) }}</el-tag>
         </el-descriptions-item>
@@ -149,6 +171,8 @@ const form = reactive({
   name: '',
   logo: '',
   description: '',
+  is_featured: 0,
+  featured_sort: 0,
   status: 'pending',
   account_username: '',
   account_password: '',
@@ -176,6 +200,8 @@ function resetForm() {
     name: '',
     logo: '',
     description: '',
+    is_featured: 0,
+    featured_sort: 0,
     status: 'pending',
     account_username: '',
     account_password: '',
@@ -200,6 +226,8 @@ function openDialog(row = null) {
       name: row.name,
       logo: row.logo || '',
       description: row.description || '',
+      is_featured: Number(row.is_featured || 0),
+      featured_sort: Number(row.featured_sort || 0),
       status: row.status,
       account_username: row.account_username || '',
       account_password: '',
@@ -224,10 +252,18 @@ async function uploadLogo(options) {
 }
 
 async function handleSubmit() {
+  const featuredCount = list.value.filter((item) => Number(item.is_featured || 0) > 0 && Number(item.id) !== Number(form.id || 0)).length
+  if (Number(form.is_featured) > 0 && featuredCount >= 5) {
+    ElMessage.warning('品牌轮播最多只能置顶 5 个品牌，请先取消其他品牌置顶')
+    return
+  }
+
   const payload = {
     name: form.name,
     logo: form.logo,
     description: form.description,
+    is_featured: form.is_featured,
+    featured_sort: form.featured_sort,
     status: form.status,
     account_username: form.account_username,
     account_password: form.account_password,
@@ -305,6 +341,12 @@ onMounted(fetchList)
   color: #909399;
 }
 
+.switch-help {
+  margin-left: 12px;
+  font-size: 12px;
+  color: #909399;
+}
+
 .table-logo,
 .preview-logo {
   width: 72px;
@@ -316,6 +358,16 @@ onMounted(fetchList)
 
 .preview-logo {
   margin-top: 12px;
+}
+
+.preview-cover {
+  width: 100%;
+  max-width: 320px;
+  height: 120px;
+  margin-top: 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #ebeef5;
 }
 
 .muted-text {

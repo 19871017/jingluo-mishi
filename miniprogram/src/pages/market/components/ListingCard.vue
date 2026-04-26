@@ -11,7 +11,7 @@
       <text v-if="item.is_featured" class="listing-badge">精选</text>
     </view>
     <text class="listing-title">{{ item.title }}</text>
-    <text class="listing-desc muted">{{ item.description }}</text>
+    <text class="listing-desc muted">{{ item.content || item.description }}</text>
     <view class="meta-row">
       <text class="meta-tag">交流帖</text>
       <text class="meta-tag">{{ item.status || 'approved' }}</text>

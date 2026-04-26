@@ -154,4 +154,34 @@ export const api = {
   createScript(payload) {
     return request({ url: '/api/scripts', method: 'POST', data: payload, auth: true })
   },
+  getPopupAd() {
+    return request({ url: '/api/popup-ad' })
+  },
+  getBbsPosts(page = 1, limit = 20, sort = 'latest') {
+    return request({ url: `/api/bbs/posts?page=${page}&limit=${limit}&sort=${encodeURIComponent(sort)}` })
+  },
+  getBbsPostDetail(id) {
+    return request({ url: `/api/bbs/posts/${id}` })
+  },
+  createBbsPost(payload) {
+    return request({ url: '/api/bbs/posts', method: 'POST', data: payload, auth: true })
+  },
+  deleteBbsPost(id) {
+    return request({ url: `/api/bbs/posts/${id}`, method: 'DELETE', auth: true })
+  },
+  likeBbsPost(id) {
+    return request({ url: `/api/bbs/posts/${id}/like`, method: 'POST', auth: true })
+  },
+  getBbsComments(postId, page = 1, limit = 20) {
+    return request({ url: `/api/bbs/posts/${postId}/comments?page=${page}&limit=${limit}` })
+  },
+  createBbsComment(postId, payload) {
+    return request({ url: `/api/bbs/posts/${postId}/comments`, method: 'POST', data: payload, auth: true })
+  },
+  deleteBbsComment(id) {
+    return request({ url: `/api/bbs/comments/${id}`, method: 'DELETE', auth: true })
+  },
+  uploadFile(formData) {
+    return request({ url: '/api/upload', method: 'POST', data: formData, auth: true, headers: { 'Content-Type': 'multipart/form-data' } })
+  },
 }

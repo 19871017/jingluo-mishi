@@ -1,9 +1,9 @@
 {
   "pages": [
     {
-      "path": "pages/index/index",
+      "path": "pages/category/category",
       "style": {
-        "navigationBarTitleText": "首页"
+        "navigationBarTitleText": "剧本"
       }
     },
     {
@@ -25,15 +25,15 @@
       }
     },
     {
-      "path": "pages/category/category",
-      "style": {
-        "navigationBarTitleText": "剧本"
-      }
-    },
-    {
       "path": "pages/brand/brand-list",
       "style": {
         "navigationBarTitleText": "品牌"
+      }
+    },
+    {
+      "path": "pages/case/case-list",
+      "style": {
+        "navigationBarTitleText": "案例"
       }
     },
     {
@@ -47,12 +47,6 @@
       "path": "pages/brand/constructor-detail",
       "style": {
         "navigationBarTitleText": "施工方详情"
-      }
-    },
-    {
-      "path": "pages/case/case-list",
-      "style": {
-        "navigationBarTitleText": "品牌施工案例"
       }
     },
     {
@@ -148,34 +142,24 @@
     "borderStyle": "black",
     "list": [
       {
-        "pagePath": "pages/index/index",
-        "text": "首页",
-        "iconPath": "static/tabbar/home.png",
-        "selectedIconPath": "static/tabbar/home-active.png"
-      },
-      {
         "pagePath": "pages/category/category",
-        "text": "剧本",
-        "iconPath": "static/tabbar/category.png",
-        "selectedIconPath": "static/tabbar/category-active.png"
+        "text": "剧本"
       },
       {
         "pagePath": "pages/brand/brand-list",
-        "text": "品牌",
-        "iconPath": "static/tabbar/brand.png",
-        "selectedIconPath": "static/tabbar/brand-active.png"
+        "text": "品牌"
+      },
+      {
+        "pagePath": "pages/case/case-list",
+        "text": "案例"
       },
       {
         "pagePath": "pages/market/market",
-        "text": "社区",
-        "iconPath": "static/tabbar/community.png",
-        "selectedIconPath": "static/tabbar/community-active.png"
+        "text": "社区"
       },
       {
         "pagePath": "pages/user/user",
-        "text": "我的",
-        "iconPath": "static/tabbar/user.png",
-        "selectedIconPath": "static/tabbar/user-active.png"
+        "text": "我的"
       }
     ]
   },

@@ -9,11 +9,14 @@
         text-color="#bfcbd9"
         active-text-color="#409EFF"
       >
-        <el-menu-item index="/dashboard">
+        <el-menu-item v-if="!store.isBrandAdmin" index="/dashboard">
           <span>首页概览</span>
         </el-menu-item>
 
         <template v-if="store.isBrandAdmin">
+          <el-menu-item index="/brand-profile">
+            <span>个人设置</span>
+          </el-menu-item>
           <el-menu-item index="/script">
             <span>我的剧本</span>
           </el-menu-item>
@@ -29,11 +32,20 @@
         </template>
 
         <template v-else>
+          <el-menu-item index="/brand">
+            <span>品牌管理</span>
+          </el-menu-item>
+          <el-menu-item index="/construction-permission">
+            <span>入驻审核</span>
+          </el-menu-item>
+          <el-menu-item index="/construction-case">
+            <span>案例管理</span>
+          </el-menu-item>
           <el-menu-item index="/category">
             <span>剧本类目管理</span>
           </el-menu-item>
-          <el-menu-item index="/brand">
-            <span>品牌管理</span>
+          <el-menu-item index="/feature-tag">
+            <span>特色标签管理</span>
           </el-menu-item>
           <el-menu-item index="/script">
             <span>剧本管理</span>
@@ -41,23 +53,11 @@
           <el-menu-item index="/script-purchase-intents">
             <span>剧本购买意向</span>
           </el-menu-item>
-          <el-menu-item index="/market">
-            <span>市场管理</span>
-          </el-menu-item>
-          <el-menu-item index="/home-content">
-            <span>首页内容管理</span>
-          </el-menu-item>
-          <el-menu-item index="/construction-permission">
-            <span>施工权限审核</span>
-          </el-menu-item>
-          <el-menu-item index="/construction-case">
-            <span>施工案例审核</span>
+          <el-menu-item index="/popup-ad">
+            <span>弹出广告管理</span>
           </el-menu-item>
           <el-menu-item index="/community">
-            <span>社区帖子管理</span>
-          </el-menu-item>
-          <el-menu-item index="/community-comments">
-            <span>社区评论管理</span>
+            <span>社区管理</span>
           </el-menu-item>
         </template>
       </el-menu>
@@ -116,6 +116,10 @@ const guideMap = {
     title: '功能说明',
     description: '这里展示当前账号的核心数据概览。管理员看全站概况，品牌方看剧本数据，施工方看案例数据。',
   },
+  '/brand-profile': {
+    title: '功能说明',
+    description: '这里用于品牌方维护自己的品牌名称、Logo、背景图和品牌介绍，前端品牌页会读取这些信息。',
+  },
   '/category': {
     title: '功能说明',
     description: '这里用于维护剧本类目。新增或修改后，前端“剧本”页和筛选项会同步使用这些类目。',
@@ -123,6 +127,10 @@ const guideMap = {
   '/brand': {
     title: '功能说明',
     description: '这里用于管理品牌资料、品牌后台账号和品牌状态。品牌页前端展示会读取这里的数据。',
+  },
+  '/feature-tag': {
+    title: '功能说明',
+    description: '这里用于维护剧本的特色标签。新增、删除或排序后，后台剧本管理和前端筛选会自动同步。',
   },
   '/script': {
     title: '功能说明',
@@ -132,21 +140,13 @@ const guideMap = {
     title: '功能说明',
     description: '这里用于查看剧本购买意向线索。仅平台管理员可见，品牌方不可查看买家联系方式。',
   },
-  '/market': {
-    title: '功能说明',
-    description: '这里用于审核和管理市场信息。前端市场页的内容展示会受这里的审核状态影响。',
-  },
-  '/home-content': {
-    title: '功能说明',
-    description: '这里用于上传首页轮播图和专题大图。轮播图跳剧本详情可填写 script/剧本ID，例如 script/12。',
-  },
   '/construction-permission': {
     title: '功能说明',
-    description: '这里用于审核施工方或其他施工权限申请。施工方审核通过后会自动生成施工方后台账号。',
+    description: '这里用于审核品牌方和施工方的入驻申请。施工方审核通过后会自动生成施工方后台账号。',
   },
   '/construction-case': {
     title: '功能说明',
-    description: '这里用于审核施工方案例。审核通过后，施工方案例会展示在前端施工方详情页。',
+    description: '这里用于管理施工案例、设置轮播置顶，并控制前端案例展示。',
   },
   '/construction-profile': {
     title: '功能说明',
@@ -158,11 +158,11 @@ const guideMap = {
   },
   '/community': {
     title: '功能说明',
-    description: '这里用于管理前端社区帖子内容，处理不合规帖子或查看社区活跃内容。',
+    description: '这里用于管理BBS帖子和评论，支持查看详情、删除操作，维护社区内容质量。',
   },
-  '/community-comments': {
+  '/popup-ad': {
     title: '功能说明',
-    description: '这里用于查看和管理社区评论，便于处理违规评论和维护社区内容质量。',
+    description: '这里用于管理小程序弹出广告。可以上传广告图片并绑定剧本，前端小程序会显示这些广告。',
   },
 }
 

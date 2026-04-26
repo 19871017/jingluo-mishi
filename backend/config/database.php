@@ -3,8 +3,8 @@ return [
     'database' => [
         'type' => 'mysql',
         'hostname' => '127.0.0.1',
-        'database' => 'think',
-        'username' => 'think',
+        'database' => 'ggg',
+        'username' => 'ggg',
         'password' => '123456',
         'hostport' => '3306',
         'charset' => 'utf8mb4',

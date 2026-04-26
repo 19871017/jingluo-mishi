@@ -52,6 +52,18 @@
           <template #default="{ row }">{{ categoryName(row.category_id) }}</template>
         </el-table-column>
         <el-table-column prop="script_type" label="类型" min-width="120" />
+        <el-table-column label="空间信息" min-width="260">
+          <template #default="{ row }">
+            <div class="space-summary">
+              <span v-if="row.area_size">面积 {{ row.area_size }}</span>
+              <span v-if="row.room_count">房间 {{ row.room_count }}</span>
+              <span v-if="row.rotation_count">滚场 {{ row.rotation_count }}</span>
+              <span v-if="row.npc_count">NPC {{ row.npc_count }}</span>
+              <span v-if="row.corridor_count">走廊 {{ row.corridor_count }}</span>
+              <span v-if="!row.area_size && !row.room_count && !row.rotation_count && !row.npc_count && !row.corridor_count">-</span>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column label="人数" width="110">
           <template #default="{ row }">{{ row.min_players }} - {{ row.max_players }}</template>
         </el-table-column>
@@ -163,14 +175,23 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="剧本类型">
+              <div class="tag-manage-toolbar">
+                <el-input v-model="newScriptTypeTag.name" placeholder="新增剧本类型，例如：赛博朋克" style="width: 260px" />
+                <el-input-number v-model="newScriptTypeTag.sort_order" :min="0" style="width: 120px" />
+                <el-button type="primary" plain @click="handleAddScriptTypeTag">新增类型</el-button>
+              </div>
+              <el-input v-model="scriptTypeTagKeyword" placeholder="搜索已有剧本类型" clearable style="margin-bottom: 12px; width: 320px" />
               <el-select
                 v-model="form.script_type"
                 filterable
                 placeholder="建议与剧本类目及高级筛选保持一致"
                 style="width: 100%"
               >
-                <el-option v-for="item in scriptTypeOptions" :key="item" :label="item" :value="item" />
+                <el-option v-for="item in filteredScriptTypeOptions" :key="item" :label="item" :value="item" />
               </el-select>
+              <div class="tag-manage-list">
+                <el-tag v-for="item in scriptTypeTagRecords" :key="`type-${item.id}`" closable @close="handleDeleteScriptTypeTag(item)">{{ item.name }} · {{ item.sort_order }}</el-tag>
+              </div>
             </el-form-item>
           </el-col>
         </el-row>
@@ -216,42 +237,39 @@
         </el-row>
 
         <el-row :gutter="16">
-          <el-col :span="8">
-            <el-form-item label="面积(㎡)">
-              <el-input-number v-model="form.area_size" :min="0" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="房间数量">
-              <el-select v-model="form.room_count" allow-create filterable placeholder="请选择" style="width: 100%">
-                <el-option v-for="item in countOptions" :key="item" :label="item" :value="item" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="走廊数量">
-              <el-select v-model="form.corridor_count" allow-create filterable placeholder="请选择" style="width: 100%">
-                <el-option v-for="item in countOptions" :key="item" :label="item" :value="item" />
-              </el-select>
-            </el-form-item>
-          </el-col>
+            <el-col :span="8">
+              <el-form-item label="面积(㎡)">
+              <el-input v-model="form.area_size" placeholder="例如：80-120㎡ / 100㎡左右" style="width: 100%" />
+              <span class="field-help">支持填写范围或泛指，例如 80-120㎡、100㎡左右。</span>
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="房间数量">
+              <el-input v-model="form.room_count" placeholder="例如：4-6间 / 5间左右" style="width: 100%" />
+              <span class="field-help">支持填写范围或泛指，例如 4-6间、5间左右。</span>
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="走廊数量">
+              <el-input v-model="form.corridor_count" placeholder="例如：1-2条 / 2条左右" style="width: 100%" />
+              <span class="field-help">支持填写范围或泛指，例如 1-2条、2条左右。</span>
+              </el-form-item>
+            </el-col>
         </el-row>
 
         <el-row :gutter="16">
-          <el-col :span="8">
-            <el-form-item label="滚场">
-              <el-select v-model="form.rotation_count" allow-create filterable placeholder="请选择" style="width: 100%">
-                <el-option v-for="item in rotationOptions" :key="item" :label="item" :value="item" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="NPC 数量">
-              <el-select v-model="form.npc_count" allow-create filterable placeholder="请选择" style="width: 100%">
-                <el-option v-for="item in countOptions" :key="item" :label="item" :value="item" />
-              </el-select>
-            </el-form-item>
-          </el-col>
+            <el-col :span="8">
+              <el-form-item label="滚场">
+              <el-input v-model="form.rotation_count" placeholder="例如：2-3场 / 3场左右" style="width: 100%" />
+              <span class="field-help">支持填写范围或泛指，例如 2-3场、3场左右。</span>
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="NPC 数量">
+              <el-input v-model="form.npc_count" placeholder="例如：3-5个 / 4个左右" style="width: 100%" />
+              <span class="field-help">支持填写范围或泛指，例如 3-5个、4个左右。</span>
+              </el-form-item>
+            </el-col>
           <el-col :span="8">
             <el-form-item label="授权状态">
               <el-select v-model="form.auth_status" placeholder="请选择授权状态" style="width: 100%">
@@ -274,15 +292,32 @@
         </el-form-item>
 
         <el-form-item label="特色标签">
+          <div class="tag-manage-toolbar">
+            <el-input v-model="newFeatureTag.name" placeholder="新增特色标签，例如：赛博朋克" style="width: 260px" />
+            <el-input-number v-model="newFeatureTag.sort_order" :min="0" style="width: 120px" />
+            <el-button type="primary" plain @click="handleAddFeatureTag">新增标签</el-button>
+          </div>
           <el-checkbox-group v-model="form.feature_tags">
             <el-checkbox v-for="item in featureOptions" :key="item" :label="item">{{ item }}</el-checkbox>
           </el-checkbox-group>
+          <div class="tag-manage-list">
+            <el-tag v-for="item in featureOptions" :key="`tag-${item}`" closable @close="handleDeleteFeatureTag(item)">{{ item }}</el-tag>
+          </div>
         </el-form-item>
 
         <el-form-item label="适合玩家">
+          <div class="tag-manage-toolbar">
+            <el-input v-model="newSuitablePlayerTag.name" placeholder="新增适合玩家，例如：情侣约会" style="width: 260px" />
+            <el-input-number v-model="newSuitablePlayerTag.sort_order" :min="0" style="width: 120px" />
+            <el-button type="primary" plain @click="handleAddSuitablePlayerTag">新增标签</el-button>
+          </div>
+          <el-input v-model="suitablePlayerTagKeyword" placeholder="搜索已有适合玩家标签" clearable style="margin-bottom: 12px; width: 320px" />
           <el-checkbox-group v-model="form.suitable_players">
-            <el-checkbox v-for="item in suitablePlayerOptions" :key="item" :label="item">{{ item }}</el-checkbox>
+            <el-checkbox v-for="item in filteredSuitablePlayerOptions" :key="item" :label="item">{{ item }}</el-checkbox>
           </el-checkbox-group>
+          <div class="tag-manage-list">
+            <el-tag v-for="item in suitablePlayerTagRecords" :key="`sp-${item.id}`" closable @close="handleDeleteSuitablePlayerTag(item)">{{ item.name }} · {{ item.sort_order }}</el-tag>
+          </div>
         </el-form-item>
 
         <el-form-item label="授权服务">
@@ -510,19 +545,18 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { brandApi, categoryApi, metaApi, scriptApi, uploadApi } from '../../api'
+import { brandApi, categoryApi, featureTagApi, metaApi, scriptApi, scriptTypeTagApi, suitablePlayerTagApi, uploadApi } from '../../api'
 import { useStore } from '../../store'
 import { SCRIPT_TAXONOMY } from '../../constants/taxonomy'
 
 const countOptions = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '10+']
 const rotationOptions = ['不可滚场', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '10+']
-const scriptTypeOptions = SCRIPT_TAXONOMY
+const scriptTypeOptions = ref([])
 const difficultyOptions = ['简单', '中等难度', '烧脑']
 const roomSizeOptions = ['小型密室', '中型密室', '大型密室', '巨型密室']
 const authStatusOptions = ['不可授权', '可授权']
-const featureOptions = ['角色扮演', '武侠', '全息投影', '械战', '韩式', '玄幻', 'VR', '有换装', '二次元', '欧式', '穿越', '情感', '多支线', '运动量大', '魔法', '机械', '科幻', '单人任务', '港风', '日式', '追逐', '对抗', '校园', '无换装', '大型机械', '悬疑', '美式', '有剧情', '宫廷', '古风']
-const suitablePlayerOptions = ['情侣约会', '学生组队', '团建聚会', '新手玩家', '硬核解谜', '戏精演绎', '亲子家庭', '高玩挑战', '恐怖爱好者', '社牛玩家', '微恐体验', '剧情控玩家']
-const authServiceOptions = ['主题详情', '主题流程', '图片资料', '音频资料', '平面图纸', '机关清单', '店员培训', '强弱电图纸', '海报', '宣传视频']
+const featureOptions = ref([])
+const suitablePlayerOptions = ref([])
 
 const store = useStore()
 const list = ref([])
@@ -539,6 +573,15 @@ const videoFieldRef = ref(null)
 const detailFieldRef = ref(null)
 const searchForm = reactive({ status: '', completeness: '' })
 const form = reactive(createDefaultForm())
+const newFeatureTag = reactive({ name: '', sort_order: 0 })
+const featureTagRecords = ref([])
+const featureTagKeyword = ref('')
+const newScriptTypeTag = reactive({ name: '', sort_order: 0 })
+const scriptTypeTagRecords = ref([])
+const scriptTypeTagKeyword = ref('')
+const newSuitablePlayerTag = reactive({ name: '', sort_order: 0 })
+const suitablePlayerTagRecords = ref([])
+const suitablePlayerTagKeyword = ref('')
 const completenessOrder = ['缺图集', '缺价格', '缺详情', '缺视频']
 
 const incompleteCount = computed(() => list.value.filter((row) => incompleteFields(row).length).length)
@@ -549,6 +592,21 @@ const previewImages = computed(() => {
   return form.cover_image ? [form.cover_image] : []
 })
 const incompleteFormFields = computed(() => incompleteFields(form))
+const filteredFeatureOptions = computed(() => {
+  const keyword = featureTagKeyword.value.trim().toLowerCase()
+  if (!keyword) return featureOptions.value
+  return featureOptions.value.filter((item) => String(item).toLowerCase().includes(keyword))
+})
+const filteredScriptTypeOptions = computed(() => {
+  const keyword = scriptTypeTagKeyword.value.trim().toLowerCase()
+  if (!keyword) return scriptTypeOptions.value
+  return scriptTypeOptions.value.filter((item) => String(item).toLowerCase().includes(keyword))
+})
+const filteredSuitablePlayerOptions = computed(() => {
+  const keyword = suitablePlayerTagKeyword.value.trim().toLowerCase()
+  if (!keyword) return suitablePlayerOptions.value
+  return suitablePlayerOptions.value.filter((item) => String(item).toLowerCase().includes(keyword))
+})
 
 function createDefaultForm() {
   return {
@@ -574,7 +632,7 @@ function createDefaultForm() {
     difficulty: '',
     room_size: '',
     feature_tags: [],
-    area_size: 0,
+    area_size: '',
     room_count: '',
     rotation_count: '',
     npc_count: '',
@@ -664,6 +722,102 @@ async function fetchBrands() {
 async function fetchCategories() {
   const data = await categoryApi.list()
   categories.value = Array.isArray(data) ? data : []
+}
+
+async function fetchFeatureTags() {
+  const data = await featureTagApi.list()
+  featureTagRecords.value = data.list || []
+  featureOptions.value = featureTagRecords.value.map((item) => item.name)
+}
+
+async function fetchScriptTypeTags() {
+  const data = await scriptTypeTagApi.list()
+  scriptTypeTagRecords.value = data.list || []
+  scriptTypeOptions.value = scriptTypeTagRecords.value.map((item) => item.name)
+}
+
+async function fetchSuitablePlayerTags() {
+  const data = await suitablePlayerTagApi.list()
+  suitablePlayerTagRecords.value = data.list || []
+  suitablePlayerOptions.value = suitablePlayerTagRecords.value.map((item) => item.name)
+}
+
+async function handleAddFeatureTag() {
+  if (!newFeatureTag.name.trim()) {
+    ElMessage.warning('请输入标签名称')
+    return
+  }
+  await featureTagApi.create({
+    name: newFeatureTag.name.trim(),
+    sort_order: Number(newFeatureTag.sort_order || 0),
+  })
+  ElMessage.success('特色标签已新增')
+  if (!form.feature_tags.includes(newFeatureTag.name.trim())) {
+    form.feature_tags.push(newFeatureTag.name.trim())
+  }
+  newFeatureTag.name = ''
+  newFeatureTag.sort_order = 0
+  await fetchFeatureTags()
+}
+
+async function handleDeleteFeatureTag(tag) {
+  await ElMessageBox.confirm(`确定删除特色标签“${tag.name}”吗？`, '删除确认', { type: 'warning' })
+  await featureTagApi.delete(tag.id)
+  ElMessage.success('特色标签已删除')
+  form.feature_tags = (form.feature_tags || []).filter((item) => item !== tag.name)
+  await fetchFeatureTags()
+}
+
+async function handleAddScriptTypeTag() {
+  if (!newScriptTypeTag.name.trim()) {
+    ElMessage.warning('请输入类型名称')
+    return
+  }
+  await scriptTypeTagApi.create({
+    name: newScriptTypeTag.name.trim(),
+    sort_order: Number(newScriptTypeTag.sort_order || 0),
+  })
+  ElMessage.success('剧本类型已新增')
+  form.script_type = newScriptTypeTag.name.trim()
+  newScriptTypeTag.name = ''
+  newScriptTypeTag.sort_order = 0
+  await fetchScriptTypeTags()
+}
+
+async function handleDeleteScriptTypeTag(tag) {
+  await ElMessageBox.confirm(`确定删除剧本类型“${tag.name}”吗？`, '删除确认', { type: 'warning' })
+  await scriptTypeTagApi.delete(tag.id)
+  ElMessage.success('剧本类型已删除')
+  if (form.script_type === tag.name) {
+    form.script_type = ''
+  }
+  await fetchScriptTypeTags()
+}
+
+async function handleAddSuitablePlayerTag() {
+  if (!newSuitablePlayerTag.name.trim()) {
+    ElMessage.warning('请输入标签名称')
+    return
+  }
+  await suitablePlayerTagApi.create({
+    name: newSuitablePlayerTag.name.trim(),
+    sort_order: Number(newSuitablePlayerTag.sort_order || 0),
+  })
+  ElMessage.success('适合玩家标签已新增')
+  if (!form.suitable_players.includes(newSuitablePlayerTag.name.trim())) {
+    form.suitable_players.push(newSuitablePlayerTag.name.trim())
+  }
+  newSuitablePlayerTag.name = ''
+  newSuitablePlayerTag.sort_order = 0
+  await fetchSuitablePlayerTags()
+}
+
+async function handleDeleteSuitablePlayerTag(tag) {
+  await ElMessageBox.confirm(`确定删除适合玩家标签“${tag.name}”吗？`, '删除确认', { type: 'warning' })
+  await suitablePlayerTagApi.delete(tag.id)
+  ElMessage.success('适合玩家标签已删除')
+  form.suitable_players = (form.suitable_players || []).filter((item) => item !== tag.name)
+  await fetchSuitablePlayerTags()
 }
 
 function syncCategoryWithType() {
@@ -852,7 +1006,7 @@ async function handleAudit(row, status) {
 
 onMounted(async () => {
   resetForm()
-  const tasks = [fetchCategories(), fetchCityRegions(), fetchList()]
+  const tasks = [fetchCategories(), fetchFeatureTags(), fetchScriptTypeTags(), fetchSuitablePlayerTags(), fetchCityRegions(), fetchList()]
   if (!store.isBrandAdmin) {
     tasks.push(fetchBrands())
   }
@@ -913,6 +1067,14 @@ watch(categories, () => {
   margin-left: 10px;
   color: #6b7280;
   font-size: 13px;
+}
+
+.field-help {
+  display: block;
+  margin-top: 6px;
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .preview-panel {
@@ -1083,6 +1245,29 @@ watch(categories, () => {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.space-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  font-size: 12px;
+  color: #606266;
+  line-height: 1.6;
+}
+
+.tag-manage-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.tag-manage-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .cover-preview {

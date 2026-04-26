@@ -13,6 +13,13 @@
       <el-table :data="caseList" border>
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="title" label="案例标题" min-width="220" />
+        <el-table-column label="轮播置顶" width="120">
+          <template #default="{ row }">
+            <el-tag v-if="Number(row.is_featured) > 0" type="success" effect="plain">已置顶</el-tag>
+            <el-tag v-else effect="plain">未置顶</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="featured_sort" label="轮播排序" width="100" />
         <el-table-column prop="status" label="审核状态" width="100">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
@@ -23,6 +30,9 @@
           <template #default="{ row }">
             <el-button v-if="row.status === 'pending'" type="success" link @click="handleApprove(row)">通过</el-button>
             <el-button v-if="row.status === 'pending'" type="danger" link @click="handleReject(row)">驳回</el-button>
+            <el-button type="warning" link @click="handleFeatured(row)">
+              {{ Number(row.is_featured) > 0 ? '取消置顶' : '设为轮播' }}
+            </el-button>
             <el-button type="info" link @click="handleView(row)">详情</el-button>
             <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
           </template>
@@ -169,6 +179,19 @@ async function handleReject(caseItem) {
     await loadCases()
   } catch (error) {
     console.error('驳回案例失败:', error)
+  }
+}
+
+async function handleFeatured(caseItem) {
+  try {
+    const nextFeatured = Number(caseItem.is_featured || 0) > 0 ? 0 : 1
+    await constructionApi.featuredCase(caseItem.id, {
+      featured: nextFeatured,
+      featured_sort: Number(caseItem.featured_sort || 0),
+    })
+    await loadCases()
+  } catch (error) {
+    console.error('设置案例轮播失败:', error)
   }
 }
 

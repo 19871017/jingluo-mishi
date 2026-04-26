@@ -7,7 +7,7 @@ use app\model\UserInteraction;
 
 class MarketService
 {
-    public static function getList(string $type = 'sell', int $page = 1, int $limit = 20): array
+    public static function getList(string $type = 'sell', int $page = 1, int $limit = 20, string $sort = 'latest'): array
     {
         $query = MarketListing::with(['user', 'images'])
             ->where('status', 'approved');
@@ -24,9 +24,17 @@ class MarketService
             ->select();
 
         $total = $query->count();
-        $listings = $query->order('created_at', 'desc')
-            ->page($page, $limit)
-            ->select();
+
+        if ($sort === 'hot') {
+            $listings = $query->order('is_featured', 'desc')
+                ->order('created_at', 'desc')
+                ->page($page, $limit)
+                ->select();
+        } else {
+            $listings = $query->order('created_at', 'desc')
+                ->page($page, $limit)
+                ->select();
+        }
 
         return [
             'featured' => $featured,
